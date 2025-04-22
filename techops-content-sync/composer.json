@@ -1,0 +1,19 @@
+{
+    "name": "techops/content-sync",
+    "description": "WordPress plugin for syncing content with Git repositories",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=7.4",
+        "czproject/git-php": "^3.18"
+    },
+    "autoload": {
+        "psr-4": {
+            "TechOpsContentSync\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    }
+} 

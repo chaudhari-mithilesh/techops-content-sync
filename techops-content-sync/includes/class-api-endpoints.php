@@ -156,6 +156,25 @@ class API_Endpoints {
             ]
         ]);
 
+        // Add new Git repository endpoints
+        register_rest_route('techops/v1', '/git/download', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_git_download'],
+            'permission_callback' => [$this, 'check_permissions'],
+            'args' => [
+                'repo_url' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'esc_url_raw'
+                ],
+                'folder_path' => [
+                    'required' => true,
+                    'type' => 'string',
+                    'sanitize_callback' => 'sanitize_text_field'
+                ]
+            ]
+        ]);
+
         // Debug: Log route registration completion
         error_log('TechOps Content Sync: REST API routes registered successfully');
     }
@@ -843,5 +862,69 @@ class API_Endpoints {
             'theme' => $slug,
             'switched_to' => $default_theme->get_stylesheet()
         ]);
+    }
+
+    /**
+     * Handle Git repository download request
+     */
+    public function handle_git_download($request) {
+        try {
+            $repo_url = $request->get_param('repo_url');
+            $folder_path = $request->get_param('folder_path');
+
+            // Initialize Git handler
+            $git_handler = new Git_Handler();
+            
+            // Download folder as zip
+            $result = $git_handler->download_folder_as_zip($repo_url, $folder_path);
+            
+            if (is_wp_error($result)) {
+                return new \WP_Error(
+                    'git_download_failed',
+                    $result->get_error_message(),
+                    ['status' => 400]
+                );
+            }
+
+            // Initialize installer
+            $installer = new Installer();
+            
+            // Detect type (plugin or theme)
+            $type = $installer->detect_type($result['zip_path']);
+            
+            if (is_wp_error($type)) {
+                return new \WP_Error(
+                    'type_detection_failed',
+                    $type->get_error_message(),
+                    ['status' => 400]
+                );
+            }
+
+            // Install the package
+            $install_result = $installer->install_from_zip($result['zip_path'], $type);
+            
+            if (is_wp_error($install_result)) {
+                return new \WP_Error(
+                    'installation_failed',
+                    $install_result->get_error_message(),
+                    ['status' => 500]
+                );
+            }
+
+            return [
+                'success' => true,
+                'message' => sprintf(
+                    'Successfully downloaded and installed %s from Git repository',
+                    $type
+                )
+            ];
+
+        } catch (\Exception $e) {
+            return new \WP_Error(
+                'git_operation_failed',
+                $e->getMessage(),
+                ['status' => 500]
+            );
+        }
     }
 }

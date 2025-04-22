@@ -18,7 +18,57 @@ if (!defined('WPINC')) {
 define('TECHOPS_CONTENT_SYNC_VERSION', '1.0.0');
 define('TECHOPS_CONTENT_SYNC_DIR', plugin_dir_path(__FILE__));
 define('TECHOPS_CONTENT_SYNC_URL', plugin_dir_url(__FILE__));
-define('TECHOPS_CONTENT_SYNC_DEBUG', true); // Enable debugging by default
+define('TECHOPS_CONTENT_SYNC_DEBUG', true);
+
+// Load Composer autoloader if it exists
+if (file_exists(TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php')) {
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php';
+}
+
+/**
+ * Check plugin dependencies
+ */
+function techops_content_sync_check_dependencies() {
+    $errors = [];
+    
+    // Check PHP version
+    if (version_compare(PHP_VERSION, '7.4', '<')) {
+        $errors[] = 'PHP 7.4 or higher is required.';
+    }
+    
+    // Check ZipArchive extension
+    if (!class_exists('ZipArchive')) {
+        $errors[] = 'PHP ZipArchive extension is required.';
+    }
+    
+    // Check if Composer autoload exists
+    if (!file_exists(TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php')) {
+        $errors[] = 'Composer dependencies are not installed. Please run composer install in the plugin directory.';
+    }
+    
+    return $errors;
+}
+
+/**
+ * Display admin notices for dependency issues
+ */
+function techops_content_sync_admin_notices() {
+    $dependency_errors = techops_content_sync_check_dependencies();
+    
+    if (!empty($dependency_errors)) {
+        ?>
+        <div class="notice notice-error">
+            <p><strong>TechOps Content Sync:</strong> The following requirements are not met:</p>
+            <ul>
+                <?php foreach ($dependency_errors as $error): ?>
+                    <li><?php echo esc_html($error); ?></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <?php
+    }
+}
+add_action('admin_notices', 'techops_content_sync_admin_notices');
 
 // Autoloader for plugin classes
 spl_autoload_register(function ($class) {
@@ -43,6 +93,12 @@ spl_autoload_register(function ($class) {
  * Initialize the plugin
  */
 function techops_content_sync_init() {
+    // Check dependencies before initializing
+    $dependency_errors = techops_content_sync_check_dependencies();
+    if (!empty($dependency_errors)) {
+        return;
+    }
+    
     // Log initialization
     error_log('TechOps Content Sync: Initializing plugin');
     
@@ -51,6 +107,8 @@ function techops_content_sync_init() {
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-authentication.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-security.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-file-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-git-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-installer.php';
     
     // Initialize API endpoints
     $api_endpoints = new TechOpsContentSync\API_Endpoints();
@@ -65,6 +123,16 @@ add_action('init', 'techops_content_sync_init');
  * Activation hook
  */
 function techops_content_sync_activate() {
+    $dependency_errors = techops_content_sync_check_dependencies();
+    
+    if (!empty($dependency_errors)) {
+        deactivate_plugins(plugin_basename(__FILE__));
+        wp_die(
+            'TechOps Content Sync cannot be activated. The following requirements are not met:<br>' .
+            implode('<br>', $dependency_errors)
+        );
+    }
+    
     error_log('TechOps Content Sync: Plugin activated');
     
     // Create necessary directories
@@ -73,6 +141,12 @@ function techops_content_sync_activate() {
     
     if (!file_exists($techops_dir)) {
         wp_mkdir_p($techops_dir);
+    }
+    
+    // Create temp directory
+    $temp_dir = $techops_dir . '/temp';
+    if (!file_exists($temp_dir)) {
+        wp_mkdir_p($temp_dir);
     }
     
     // Create log file
@@ -138,6 +212,33 @@ function techops_content_sync_admin_page() {
             <p>Debug Mode: <?php echo TECHOPS_CONTENT_SYNC_DEBUG ? 'Enabled' : 'Disabled'; ?></p>
             <p>Plugin Directory: <?php echo TECHOPS_CONTENT_SYNC_DIR; ?></p>
             <p>Plugin URL: <?php echo TECHOPS_CONTENT_SYNC_URL; ?></p>
+        </div>
+        
+        <div class="card">
+            <h2>Git Repository Integration</h2>
+            <form id="git-repo-form" method="post">
+                <?php wp_nonce_field('techops_git_action', 'techops_git_nonce'); ?>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="repo-url">Git Repository URL</label></th>
+                        <td>
+                            <input type="url" id="repo-url" name="repo_url" class="regular-text" required>
+                            <p class="description">Enter the URL of the Git repository</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="folder-path">Folder Path</label></th>
+                        <td>
+                            <input type="text" id="folder-path" name="folder_path" class="regular-text" required>
+                            <p class="description">Enter the path to the folder within the repository</p>
+                        </td>
+                    </tr>
+                </table>
+                <p class="submit">
+                    <button type="submit" class="button button-primary">Download and Install</button>
+                </p>
+            </form>
+            <div id="status-message"></div>
         </div>
         
         <div class="card">

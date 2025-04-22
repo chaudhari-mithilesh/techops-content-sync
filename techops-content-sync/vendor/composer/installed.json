@@ -1,0 +1,55 @@
+{
+    "packages": [
+        {
+            "name": "czproject/git-php",
+            "version": "v3.18.2",
+            "version_normalized": "3.18.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/czproject/git-php.git",
+                "reference": "cb3bfc6f1e487e572870afae5d52ef3c7d250d8a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/czproject/git-php/zipball/cb3bfc6f1e487e572870afae5d52ef3c7d250d8a",
+                "reference": "cb3bfc6f1e487e572870afae5d52ef3c7d250d8a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "nette/tester": "^1.1"
+            },
+            "time": "2021-02-15T11:41:33+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "classmap": [
+                    "src/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Jan Pecha",
+                    "email": "janpecha@email.cz"
+                }
+            ],
+            "description": "Library for work with Git repository in PHP.",
+            "keywords": [
+                "git"
+            ],
+            "support": {
+                "issues": "https://github.com/czproject/git-php/issues",
+                "source": "https://github.com/czproject/git-php/tree/v3.18.2"
+            },
+            "install-path": "../czproject/git-php"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

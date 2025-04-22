@@ -1,0 +1,48 @@
+.techops-content-sync-wrap .card {
+    max-width: 100%;
+    margin-top: 20px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.techops-content-sync-wrap .card h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.techops-content-sync-wrap .form-table th {
+    width: 200px;
+}
+
+.techops-content-sync-wrap .form-table td {
+    padding: 15px 10px;
+}
+
+.techops-content-sync-wrap .form-table input[type="url"],
+.techops-content-sync-wrap .form-table input[type="text"] {
+    width: 100%;
+    max-width: 400px;
+}
+
+.techops-content-sync-wrap .description {
+    margin-top: 5px;
+    color: #666;
+}
+
+.techops-content-sync-wrap #status-message {
+    margin-top: 15px;
+}
+
+.techops-content-sync-wrap .notice {
+    margin: 15px 0;
+}
+
+.techops-content-sync-wrap pre {
+    background: #f5f5f5;
+    padding: 10px;
+    overflow: auto;
+    max-height: 300px;
+} 
