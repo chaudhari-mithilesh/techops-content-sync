@@ -273,12 +273,70 @@ function techops_content_sync_admin_page() {
             $log_file = $upload_dir['basedir'] . '/techops-content-sync/techops-content-sync.log';
             
             if (file_exists($log_file)) {
-                $logs = file_get_contents($log_file);
-                echo '<pre>' . esc_html($logs) . '</pre>';
+                // Read the last 20 lines of the log file
+                $logs = file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if ($logs) {
+                    $logs = array_slice($logs, -20); // Get last 20 lines
+                    echo '<div class="log-container">';
+                    foreach ($logs as $log) {
+                        // Check if the line is a timestamp line
+                        if (strpos($log, 'TechOps Content Sync Log -') === 0) {
+                            echo '<h3 class="log-date">' . esc_html($log) . '</h3>';
+                        } else {
+                            // Parse the log entry
+                            if (preg_match('/\[(.*?)\](.*?)$/', $log, $matches)) {
+                                $timestamp = $matches[1];
+                                $message = $matches[2];
+                                echo '<div class="log-entry">';
+                                echo '<span class="log-time">' . esc_html($timestamp) . '</span>';
+                                echo '<span class="log-message">' . esc_html($message) . '</span>';
+                                echo '</div>';
+                            } else {
+                                echo '<div class="log-entry">';
+                                echo '<span class="log-message">' . esc_html($log) . '</span>';
+                                echo '</div>';
+                            }
+                        }
+                    }
+                    echo '</div>';
+                } else {
+                    echo '<p>No log entries found.</p>';
+                }
             } else {
-                echo '<p>No logs found.</p>';
+                echo '<p>No logs available yet. Plugin activities will be logged here.</p>';
             }
             ?>
+            <style>
+                .log-container {
+                    background: #f8f9fa;
+                    border: 1px solid #dee2e6;
+                    border-radius: 4px;
+                    padding: 15px;
+                    max-height: 400px;
+                    overflow-y: auto;
+                }
+                .log-date {
+                    color: #495057;
+                    font-size: 1.1em;
+                    margin: 10px 0;
+                    padding-bottom: 5px;
+                    border-bottom: 1px solid #dee2e6;
+                }
+                .log-entry {
+                    padding: 5px 0;
+                    line-height: 1.4;
+                    display: flex;
+                    gap: 10px;
+                }
+                .log-time {
+                    color: #6c757d;
+                    white-space: nowrap;
+                }
+                .log-message {
+                    color: #212529;
+                    flex: 1;
+                }
+            </style>
         </div>
     </div>
     <?php
