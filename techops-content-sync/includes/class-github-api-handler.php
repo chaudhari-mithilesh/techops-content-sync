@@ -320,4 +320,98 @@ class GitHub_API_Handler {
             'reset' => $response['resources']['core']['reset']
         ];
     }
+
+    /**
+     * Handle Git repository download request
+     * 
+     * @param string $repo_url Repository URL
+     * @param string $folder_path Path to download
+     * @return array|WP_Error Download result or error
+     */
+    public function handle_git_download($repo_url, $folder_path) {
+        try {
+            $repo_info = $this->parse_repository_url($repo_url);
+            if (is_wp_error($repo_info)) {
+                return $repo_info;
+            }
+
+            // Get repository contents
+            $contents = $this->api_request("/repos/{$repo_info['owner']}/{$repo_info['name']}/contents/{$folder_path}");
+            if (is_wp_error($contents)) {
+                return $contents;
+            }
+
+            // Create temporary directory
+            $temp_dir = wp_upload_dir()['basedir'] . '/techops-temp';
+            if (!file_exists($temp_dir)) {
+                wp_mkdir_p($temp_dir);
+            }
+
+            $download_dir = $temp_dir . '/' . uniqid('git-download-');
+            wp_mkdir_p($download_dir);
+
+            // Download files
+            foreach ($contents as $item) {
+                if ($item['type'] === 'file') {
+                    $file_path = $download_dir . '/' . $item['name'];
+                    $file_content = $this->api_request($item['url']);
+                    if (is_wp_error($file_content)) {
+                        $this->cleanup($download_dir);
+                        return $file_content;
+                    }
+                    file_put_contents($file_path, base64_decode($file_content['content']));
+                }
+            }
+
+            return [
+                'success' => true,
+                'download_path' => $download_dir,
+                'cleanup' => function() use ($download_dir) {
+                    $this->cleanup($download_dir);
+                }
+            ];
+
+        } catch (\Exception $e) {
+            if (isset($download_dir)) {
+                $this->cleanup($download_dir);
+            }
+            return new \WP_Error(
+                'git_download_failed',
+                $e->getMessage(),
+                ['status' => 500]
+            );
+        }
+    }
+
+    /**
+     * Clean up temporary files
+     * 
+     * @param string $path Path to clean up
+     */
+    private function cleanup($path) {
+        if (file_exists($path)) {
+            $this->recursive_remove_directory($path);
+        }
+    }
+
+    /**
+     * Recursively remove directory
+     * 
+     * @param string $dir Directory to remove
+     */
+    private function recursive_remove_directory($dir) {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (is_dir($dir . "/" . $object)) {
+                        $this->recursive_remove_directory($dir . "/" . $object);
+                    } else {
+                        unlink($dir . "/" . $object);
+                    }
+                }
+            }
+            rmdir($dir);
+        }
+    }
 } 

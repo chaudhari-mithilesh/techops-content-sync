@@ -9,6 +9,8 @@
  * Text Domain: techops-content-sync
  */
 
+namespace TechOpsContentSync;
+
 // If this file is called directly, abort.
 if (!defined('WPINC')) {
     die;
@@ -72,18 +74,18 @@ add_action('admin_notices', 'techops_content_sync_admin_notices');
 
 // Autoloader for plugin classes
 spl_autoload_register(function ($class) {
-    // Check if the class belongs to our namespace
+    // Check if the class is in our namespace
     if (strpos($class, 'TechOpsContentSync\\') !== 0) {
         return;
     }
 
-    // Remove namespace prefix
-    $class = str_replace('TechOpsContentSync\\', '', $class);
-    
-    // Convert class name to file path
-    $file = TECHOPS_CONTENT_SYNC_DIR . 'includes/class-' . strtolower(str_replace('_', '-', $class)) . '.php';
-    
-    // Load the file if it exists
+    // Remove namespace from class name
+    $class_file = str_replace('TechOpsContentSync\\', '', $class);
+    // Convert class name format to file name format
+    $class_file = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $class_file));
+    // Build the file path
+    $file = TECHOPS_CONTENT_SYNC_DIR . 'includes/class-' . $class_file . '.php';
+
     if (file_exists($file)) {
         require_once $file;
     }
@@ -102,28 +104,85 @@ function techops_content_sync_init() {
     // Log initialization
     error_log('TechOps Content Sync: Initializing plugin');
     
-    // Load required files
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-api-endpoints.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-authentication.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-security.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-file-handler.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-git-handler.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-installer.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-github-api-handler.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-settings.php';
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-sync-history.php';
-    
     // Initialize Settings
-    new TechOpsContentSync\Settings();
-    
-    // Initialize API endpoints
-    $api_endpoints = new TechOpsContentSync\API_Endpoints();
+    $settings = new Settings();
+    $settings->register_settings();
+
+    // Initialize GitHub API Handler
+    $github_api = new GitHub_API_Handler($settings);
+
+    // Initialize Sync History
+    $sync_history = new Sync_History();
+
+    // Initialize Repository Handler
+    $repository_handler = new Repository_Handler($github_api);
+
+    // Initialize Package Detector
+    $package_detector = new Package_Detector();
+
+    // Initialize Package Installer
+    $package_installer = new Package_Installer($sync_history, $settings);
+
+    // Initialize Sync Manager
+    $sync_manager = new Sync_Manager(
+        $github_api,
+        $repository_handler,
+        $package_detector,
+        $package_installer,
+        $sync_history,
+        $settings
+    );
+
+    // Initialize API Endpoints
+    $api_endpoints = new API_Endpoints($sync_manager, $github_api);
     add_action('rest_api_init', [$api_endpoints, 'register_routes']);
     
     // Log API init hook
     error_log('TechOps Content Sync: Added REST API init hook');
+
+    // Add admin menu
+    add_action('admin_menu', function() {
+        add_menu_page(
+            'TechOps Content Sync',
+            'Content Sync',
+            'manage_options',
+            'techops-content-sync',
+            function() {
+                require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/git-form.php';
+            },
+            'dashicons-update',
+            30
+        );
+    });
+
+    // Enqueue admin scripts and styles
+    add_action('admin_enqueue_scripts', function($hook) {
+        if ($hook !== 'toplevel_page_techops-content-sync') {
+            return;
+        }
+
+        wp_enqueue_style(
+            'techops-content-sync-admin',
+            TECHOPS_CONTENT_SYNC_URL . 'assets/css/admin.css',
+            [],
+            TECHOPS_CONTENT_SYNC_VERSION
+        );
+
+        wp_enqueue_script(
+            'techops-content-sync-admin',
+            TECHOPS_CONTENT_SYNC_URL . 'assets/js/admin.js',
+            ['jquery'],
+            TECHOPS_CONTENT_SYNC_VERSION,
+            true
+        );
+
+        wp_localize_script('techops-content-sync-admin', 'techopsContentSync', [
+            'apiUrl' => rest_url('techops/v1/'),
+            'nonce' => wp_create_nonce('wp_rest')
+        ]);
+    });
 }
-add_action('init', 'techops_content_sync_init');
+add_action('plugins_loaded', 'TechOpsContentSync\\techops_content_sync_init');
 
 /**
  * Activation hook
@@ -163,8 +222,24 @@ function techops_content_sync_activate() {
     
     // Flush rewrite rules
     flush_rewrite_rules();
+
+    // Create required directories
+    $dirs = [
+        WP_CONTENT_DIR . '/techops-temp',
+        WP_CONTENT_DIR . '/techops-backups'
+    ];
+
+    foreach ($dirs as $dir) {
+        if (!file_exists($dir)) {
+            wp_mkdir_p($dir);
+        }
+    }
+
+    // Create database tables
+    $installer = new Installer();
+    $installer->run();
 }
-register_activation_hook(__FILE__, 'techops_content_sync_activate');
+register_activation_hook(__FILE__, 'TechOpsContentSync\\techops_content_sync_activate');
 
 /**
  * Deactivation hook
@@ -174,8 +249,31 @@ function techops_content_sync_deactivate() {
     
     // Flush rewrite rules
     flush_rewrite_rules();
+
+    // Clean up temporary files
+    $dirs = [
+        WP_CONTENT_DIR . '/techops-temp'
+    ];
+
+    foreach ($dirs as $dir) {
+        if (is_dir($dir)) {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    rmdir($file->getRealPath());
+                } else {
+                    unlink($file->getRealPath());
+                }
+            }
+            rmdir($dir);
+        }
+    }
 }
-register_deactivation_hook(__FILE__, 'techops_content_sync_deactivate');
+register_deactivation_hook(__FILE__, 'TechOpsContentSync\\techops_content_sync_deactivate');
 
 /**
  * Admin page callback
@@ -278,60 +376,6 @@ function techops_content_sync_admin_page() {
     </div>
     <?php
 }
-
-/**
- * Add admin menu
- */
-function techops_content_sync_admin_menu() {
-    add_menu_page(
-        'TechOps Content Sync',
-        'TechOps Sync',
-        'manage_options',
-        'techops-content-sync',
-        'techops_content_sync_admin_page',
-        'dashicons-update',
-        30
-    );
-}
-add_action('admin_menu', 'techops_content_sync_admin_menu');
-
-/**
- * Enqueue admin scripts and styles
- */
-function techops_content_sync_admin_enqueue_scripts($hook) {
-    // Only enqueue on our plugin pages
-    if (strpos($hook, 'techops-content-sync') === false) {
-        return;
-    }
-    
-    wp_enqueue_style(
-        'techops-content-sync-admin',
-        TECHOPS_CONTENT_SYNC_URL . 'assets/css/admin.css',
-        array(),
-        TECHOPS_CONTENT_SYNC_VERSION
-    );
-    
-    wp_enqueue_script(
-        'techops-content-sync-admin',
-        TECHOPS_CONTENT_SYNC_URL . 'assets/js/admin.js',
-        array('jquery'),
-        TECHOPS_CONTENT_SYNC_VERSION,
-        true
-    );
-    
-    wp_localize_script('techops-content-sync-admin', 'techops_ajax', array(
-        'api_url' => rest_url(),
-        'nonce' => wp_create_nonce('wp_rest'),
-        'strings' => array(
-            'validating' => __('Validating repository...', 'techops-content-sync'),
-            'downloading' => __('Downloading files...', 'techops-content-sync'),
-            'installing' => __('Installing...', 'techops-content-sync'),
-            'error' => __('Error:', 'techops-content-sync'),
-            'success' => __('Success:', 'techops-content-sync')
-        )
-    ));
-}
-add_action('admin_enqueue_scripts', 'techops_content_sync_admin_enqueue_scripts');
 
 /**
  * AJAX handler for getting recent operations
