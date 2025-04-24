@@ -45,4 +45,145 @@
     padding: 10px;
     overflow: auto;
     max-height: 300px;
+}
+
+.status-message {
+    margin: 20px 0;
+}
+
+.notice {
+    padding: 10px;
+    margin: 10px 0;
+    border-left: 4px solid;
+}
+
+.notice p {
+    margin: 0;
+    padding: 0;
+}
+
+.notice-info {
+    background-color: #f0f6fc;
+    border-left-color: #72aee6;
+}
+
+.notice-success {
+    background-color: #f0f6e6;
+    border-left-color: #00a32a;
+}
+
+.notice-error {
+    background-color: #fcf0f0;
+    border-left-color: #d63638;
+}
+
+.notice-warning {
+    background-color: #fcf9e8;
+    border-left-color: #dba617;
+}
+
+#git-repo-form {
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+#git-repo-form .form-table th {
+    width: 200px;
+}
+
+#git-repo-form .form-table td {
+    padding: 15px 10px;
+}
+
+#git-repo-form input[type="url"],
+#git-repo-form input[type="text"] {
+    width: 100%;
+}
+
+.description {
+    margin-top: 5px;
+    color: #646970;
+}
+
+#status-message {
+    margin: 20px 0;
+}
+
+/* Loading animation */
+.loading:after {
+    content: '.';
+    animation: dots 1s steps(5, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60% { content: '...'; }
+    80%, 100% { content: ''; }
+}
+
+.operation-log-container {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.operation-log-container h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.log-entries {
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.log-entry {
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.log-time {
+    color: #646970;
+    margin-right: 10px;
+}
+
+.log-message {
+    color: #1d2327;
+}
+
+.log-info .log-message {
+    color: #2271b1;
+}
+
+.log-success .log-message {
+    color: #00a32a;
+}
+
+.log-error .log-message {
+    color: #d63638;
+}
+
+/* Recent Operations Table Styles */
+#recent-operations table {
+    margin-top: 15px;
+}
+
+#recent-operations .status-success {
+    background-color: #f0f6e6;
+}
+
+#recent-operations .status-error {
+    background-color: #fcf0f0;
+}
+
+#recent-operations .status-info {
+    background-color: #f0f6fc;
 } 

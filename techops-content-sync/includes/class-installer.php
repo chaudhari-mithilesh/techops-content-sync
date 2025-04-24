@@ -1,7 +1,79 @@
 <?php
 namespace TechOpsContentSync;
 
+/**
+ * Installer Class
+ * 
+ * Handles plugin installation and database setup.
+ */
 class Installer {
+    /**
+     * Run installer
+     */
+    public static function run() {
+        self::create_tables();
+    }
+
+    /**
+     * Create required database tables
+     */
+    private static function create_tables() {
+        global $wpdb;
+        $charset_collate = $wpdb->get_charset_collate();
+
+        // Sync History Table
+        $sync_history_table = $wpdb->prefix . 'techops_sync_history';
+        $sql = "CREATE TABLE IF NOT EXISTS $sync_history_table (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            sync_id VARCHAR(36) NOT NULL,
+            repository_url VARCHAR(255) NOT NULL,
+            branch VARCHAR(100) NOT NULL,
+            status VARCHAR(20) NOT NULL,
+            started_at DATETIME NOT NULL,
+            completed_at DATETIME,
+            error_message TEXT,
+            PRIMARY KEY (id),
+            INDEX (sync_id)
+        ) $charset_collate;";
+
+        // Package Status Table
+        $sync_packages_table = $wpdb->prefix . 'techops_sync_packages';
+        $sql .= "CREATE TABLE IF NOT EXISTS $sync_packages_table (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            sync_id VARCHAR(36) NOT NULL,
+            package_name VARCHAR(255) NOT NULL,
+            package_type VARCHAR(20) NOT NULL,
+            status VARCHAR(20) NOT NULL,
+            error_message TEXT,
+            PRIMARY KEY (id),
+            INDEX (sync_id)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+
+    /**
+     * Drop plugin tables
+     */
+    public static function uninstall() {
+        global $wpdb;
+        
+        $tables = [
+            $wpdb->prefix . 'techops_sync_history',
+            $wpdb->prefix . 'techops_sync_packages'
+        ];
+
+        foreach ($tables as $table) {
+            $wpdb->query("DROP TABLE IF EXISTS $table");
+        }
+
+        // Clean up options
+        delete_option(Settings::GITHUB_TOKEN_OPTION);
+        delete_option(Settings::WP_AUTH_OPTION);
+        delete_option(Settings::SYNC_PREFERENCES);
+    }
+
     /**
      * Install a plugin or theme from a zip file
      *

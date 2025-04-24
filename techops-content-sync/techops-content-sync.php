@@ -109,6 +109,12 @@ function techops_content_sync_init() {
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-file-handler.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-git-handler.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-installer.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-github-api-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-settings.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-sync-history.php';
+    
+    // Initialize Settings
+    new TechOpsContentSync\Settings();
     
     // Initialize API endpoints
     $api_endpoints = new TechOpsContentSync\API_Endpoints();
@@ -172,22 +178,6 @@ function techops_content_sync_deactivate() {
 register_deactivation_hook(__FILE__, 'techops_content_sync_deactivate');
 
 /**
- * Add admin menu
- */
-function techops_content_sync_admin_menu() {
-    add_menu_page(
-        'TechOps Content Sync',
-        'TechOps Sync',
-        'manage_options',
-        'techops-content-sync',
-        'techops_content_sync_admin_page',
-        'dashicons-update',
-        30
-    );
-}
-add_action('admin_menu', 'techops_content_sync_admin_menu');
-
-/**
  * Admin page callback
  */
 function techops_content_sync_admin_page() {
@@ -196,23 +186,9 @@ function techops_content_sync_admin_page() {
         return;
     }
     
-    // Get plugin status
-    $api_endpoints = new TechOpsContentSync\API_Endpoints();
-    $auth = new TechOpsContentSync\Authentication();
-    $security = new TechOpsContentSync\Security();
-    
-    // Display admin page
     ?>
-    <div class="wrap">
+    <div class="wrap techops-content-sync-wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-        
-        <div class="card">
-            <h2>Plugin Status</h2>
-            <p>Version: <?php echo TECHOPS_CONTENT_SYNC_VERSION; ?></p>
-            <p>Debug Mode: <?php echo TECHOPS_CONTENT_SYNC_DEBUG ? 'Enabled' : 'Disabled'; ?></p>
-            <p>Plugin Directory: <?php echo TECHOPS_CONTENT_SYNC_DIR; ?></p>
-            <p>Plugin URL: <?php echo TECHOPS_CONTENT_SYNC_URL; ?></p>
-        </div>
         
         <div class="card">
             <h2>Git Repository Integration</h2>
@@ -238,106 +214,180 @@ function techops_content_sync_admin_page() {
                     <button type="submit" class="button button-primary">Download and Install</button>
                 </p>
             </form>
-            <div id="status-message"></div>
-        </div>
-        
-        <div class="card">
-            <h2>REST API Status</h2>
-            <p>API Base URL: <?php echo esc_url(rest_url('techops/v1')); ?></p>
-            <p>Available Endpoints:</p>
-            <ul>
-                <li>GET /plugins/list - List all plugins</li>
-                <li>POST /plugins/activate/{slug} - Activate a plugin</li>
-                <li>POST /plugins/deactivate/{slug} - Deactivate a plugin</li>
-                <li>GET /plugins/download/{slug} - Download a plugin</li>
-                <li>GET /themes/list - List all themes</li>
-                <li>POST /themes/activate/{slug} - Activate a theme</li>
-                <li>POST /themes/deactivate/{slug} - Deactivate a theme</li>
-                <li>GET /themes/download/{slug} - Download a theme</li>
-            </ul>
-        </div>
-        
-        <div class="card">
-            <h2>Authentication</h2>
-            <p>Authentication Method: Basic Auth</p>
-            <p>Required Capability: manage_options</p>
-            <?php if (TECHOPS_CONTENT_SYNC_DEBUG): ?>
-                <p>Debug Token: d2lzZG06czF6WiBDSWxJIDF2QmMgOWU1biBZUk1MIDFrU0w=</p>
-            <?php endif; ?>
-        </div>
-        
-        <div class="card">
-            <h2>Logs</h2>
-            <?php
-            $upload_dir = wp_upload_dir();
-            $log_file = $upload_dir['basedir'] . '/techops-content-sync/techops-content-sync.log';
             
-            if (file_exists($log_file)) {
-                // Read the last 20 lines of the log file
-                $logs = file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                if ($logs) {
-                    $logs = array_slice($logs, -20); // Get last 20 lines
-                    echo '<div class="log-container">';
-                    foreach ($logs as $log) {
-                        // Check if the line is a timestamp line
-                        if (strpos($log, 'TechOps Content Sync Log -') === 0) {
-                            echo '<h3 class="log-date">' . esc_html($log) . '</h3>';
-                        } else {
-                            // Parse the log entry
-                            if (preg_match('/\[(.*?)\](.*?)$/', $log, $matches)) {
-                                $timestamp = $matches[1];
-                                $message = $matches[2];
-                                echo '<div class="log-entry">';
-                                echo '<span class="log-time">' . esc_html($timestamp) . '</span>';
-                                echo '<span class="log-message">' . esc_html($message) . '</span>';
-                                echo '</div>';
-                            } else {
-                                echo '<div class="log-entry">';
-                                echo '<span class="log-message">' . esc_html($log) . '</span>';
-                                echo '</div>';
-                            }
+            <!-- Status Messages Container -->
+            <div id="status-message"></div>
+            
+            <!-- Operation Log Container -->
+            <div id="operation-log" class="operation-log-container" style="display: none;">
+                <h3>Operation Log</h3>
+                <div class="log-entries"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>Recent Operations</h2>
+            <div id="recent-operations">
+                <?php
+                // Get recent operations from the database
+                global $wpdb;
+                $table_name = $wpdb->prefix . 'techops_sync_history';
+                $recent_ops = $wpdb->get_results(
+                    "SELECT * FROM {$table_name} ORDER BY started_at DESC LIMIT 10"
+                );
+                
+                if ($recent_ops) {
+                    echo '<table class="widefat">';
+                    echo '<thead><tr>';
+                    echo '<th>Repository</th>';
+                    echo '<th>Status</th>';
+                    echo '<th>Started</th>';
+                    echo '<th>Completed</th>';
+                    echo '<th>Result</th>';
+                    echo '</tr></thead><tbody>';
+                    
+                    foreach ($recent_ops as $op) {
+                        $status_class = '';
+                        switch ($op->status) {
+                            case 'completed':
+                                $status_class = 'success';
+                                break;
+                            case 'failed':
+                                $status_class = 'error';
+                                break;
+                            default:
+                                $status_class = 'info';
                         }
+                        
+                        echo "<tr class='status-{$status_class}'>";
+                        echo "<td>" . esc_html($op->repository_url) . "</td>";
+                        echo "<td>" . esc_html(ucfirst($op->status)) . "</td>";
+                        echo "<td>" . esc_html($op->started_at) . "</td>";
+                        echo "<td>" . esc_html($op->completed_at ?: '-') . "</td>";
+                        echo "<td>" . esc_html($op->error_message ?: 'Success') . "</td>";
+                        echo "</tr>";
                     }
-                    echo '</div>';
+                    
+                    echo '</tbody></table>';
                 } else {
-                    echo '<p>No log entries found.</p>';
+                    echo '<p>No recent operations found.</p>';
                 }
-            } else {
-                echo '<p>No logs available yet. Plugin activities will be logged here.</p>';
-            }
-            ?>
-            <style>
-                .log-container {
-                    background: #f8f9fa;
-                    border: 1px solid #dee2e6;
-                    border-radius: 4px;
-                    padding: 15px;
-                    max-height: 400px;
-                    overflow-y: auto;
-                }
-                .log-date {
-                    color: #495057;
-                    font-size: 1.1em;
-                    margin: 10px 0;
-                    padding-bottom: 5px;
-                    border-bottom: 1px solid #dee2e6;
-                }
-                .log-entry {
-                    padding: 5px 0;
-                    line-height: 1.4;
-                    display: flex;
-                    gap: 10px;
-                }
-                .log-time {
-                    color: #6c757d;
-                    white-space: nowrap;
-                }
-                .log-message {
-                    color: #212529;
-                    flex: 1;
-                }
-            </style>
+                ?>
+            </div>
         </div>
     </div>
     <?php
-} 
+}
+
+/**
+ * Add admin menu
+ */
+function techops_content_sync_admin_menu() {
+    add_menu_page(
+        'TechOps Content Sync',
+        'TechOps Sync',
+        'manage_options',
+        'techops-content-sync',
+        'techops_content_sync_admin_page',
+        'dashicons-update',
+        30
+    );
+}
+add_action('admin_menu', 'techops_content_sync_admin_menu');
+
+/**
+ * Enqueue admin scripts and styles
+ */
+function techops_content_sync_admin_enqueue_scripts($hook) {
+    // Only enqueue on our plugin pages
+    if (strpos($hook, 'techops-content-sync') === false) {
+        return;
+    }
+    
+    wp_enqueue_style(
+        'techops-content-sync-admin',
+        TECHOPS_CONTENT_SYNC_URL . 'assets/css/admin.css',
+        array(),
+        TECHOPS_CONTENT_SYNC_VERSION
+    );
+    
+    wp_enqueue_script(
+        'techops-content-sync-admin',
+        TECHOPS_CONTENT_SYNC_URL . 'assets/js/admin.js',
+        array('jquery'),
+        TECHOPS_CONTENT_SYNC_VERSION,
+        true
+    );
+    
+    wp_localize_script('techops-content-sync-admin', 'techops_ajax', array(
+        'api_url' => rest_url(),
+        'nonce' => wp_create_nonce('wp_rest'),
+        'strings' => array(
+            'validating' => __('Validating repository...', 'techops-content-sync'),
+            'downloading' => __('Downloading files...', 'techops-content-sync'),
+            'installing' => __('Installing...', 'techops-content-sync'),
+            'error' => __('Error:', 'techops-content-sync'),
+            'success' => __('Success:', 'techops-content-sync')
+        )
+    ));
+}
+add_action('admin_enqueue_scripts', 'techops_content_sync_admin_enqueue_scripts');
+
+/**
+ * AJAX handler for getting recent operations
+ */
+function techops_get_recent_operations() {
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error('Unauthorized');
+        return;
+    }
+    
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'techops_sync_history';
+    $recent_ops = $wpdb->get_results(
+        "SELECT * FROM {$table_name} ORDER BY started_at DESC LIMIT 10"
+    );
+    
+    ob_start();
+    
+    if ($recent_ops) {
+        echo '<table class="widefat">';
+        echo '<thead><tr>';
+        echo '<th>Repository</th>';
+        echo '<th>Status</th>';
+        echo '<th>Started</th>';
+        echo '<th>Completed</th>';
+        echo '<th>Result</th>';
+        echo '</tr></thead><tbody>';
+        
+        foreach ($recent_ops as $op) {
+            $status_class = '';
+            switch ($op->status) {
+                case 'completed':
+                    $status_class = 'success';
+                    break;
+                case 'failed':
+                    $status_class = 'error';
+                    break;
+                default:
+                    $status_class = 'info';
+            }
+            
+            echo "<tr class='status-{$status_class}'>";
+            echo "<td>" . esc_html($op->repository_url) . "</td>";
+            echo "<td>" . esc_html(ucfirst($op->status)) . "</td>";
+            echo "<td>" . esc_html($op->started_at) . "</td>";
+            echo "<td>" . esc_html($op->completed_at ?: '-') . "</td>";
+            echo "<td>" . esc_html($op->error_message ?: 'Success') . "</td>";
+            echo "</tr>";
+        }
+        
+        echo '</tbody></table>';
+    } else {
+        echo '<p>No recent operations found.</p>';
+    }
+    
+    $html = ob_get_clean();
+    wp_send_json_success($html);
+}
+add_action('wp_ajax_techops_get_recent_operations', 'techops_get_recent_operations'); 
