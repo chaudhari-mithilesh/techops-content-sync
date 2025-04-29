@@ -51,10 +51,14 @@ function techops_content_sync_init() {
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-authentication.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-security.php';
     require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-file-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-github-handler.php';
     
     // Initialize API endpoints
     $api_endpoints = new TechOpsContentSync\API_Endpoints();
     add_action('rest_api_init', [$api_endpoints, 'register_routes']);
+    
+    // Initialize GitHub handler
+    $github_handler = new TechOpsContentSync\GitHub_Handler();
     
     // Log API init hook
     error_log('TechOps Content Sync: Added REST API init hook');
@@ -73,6 +77,12 @@ function techops_content_sync_activate() {
     
     if (!file_exists($techops_dir)) {
         wp_mkdir_p($techops_dir);
+    }
+    
+    // Create git-content directory
+    $git_content_dir = TECHOPS_CONTENT_SYNC_DIR . 'git-content';
+    if (!file_exists($git_content_dir)) {
+        wp_mkdir_p($git_content_dir);
     }
     
     // Create log file
@@ -122,10 +132,48 @@ function techops_content_sync_admin_page() {
         return;
     }
     
+    // Handle form submissions
+    if (isset($_POST['techops_github_settings']) && check_admin_referer('techops_github_settings_update')) {
+        $settings = array(
+            'github_username' => sanitize_text_field($_POST['github_username']),
+            'github_repo' => sanitize_text_field($_POST['github_repo']),
+            'github_token' => sanitize_text_field($_POST['github_token']),
+            'github_file_path' => sanitize_text_field($_POST['github_file_path']),
+            'github_download_path' => sanitize_text_field($_POST['github_download_path'])
+        );
+        
+        update_option('techops_github_settings', $settings);
+        add_settings_error('techops_github_settings', 'settings_updated', 'GitHub settings updated successfully.', 'updated');
+    }
+    
+    // Handle file download
+    if (isset($_POST['download_github_file']) && check_admin_referer('techops_download_file')) {
+        $github_handler = new TechOpsContentSync\GitHub_Handler();
+        $result = $github_handler->download_file();
+        
+        if (is_wp_error($result)) {
+            add_settings_error('techops_github_settings', 'download_error', 'Error downloading file: ' . $result->get_error_message(), 'error');
+        } else {
+            add_settings_error('techops_github_settings', 'download_success', 'File downloaded successfully to: ' . esc_html($result), 'updated');
+        }
+    }
+    
+    // Get current settings
+    $settings = get_option('techops_github_settings', array(
+        'github_username' => '',
+        'github_repo' => '',
+        'github_token' => '',
+        'github_file_path' => '',
+        'github_download_path' => 'git-content/'
+    ));
+    
     // Get plugin status
     $api_endpoints = new TechOpsContentSync\API_Endpoints();
     $auth = new TechOpsContentSync\Authentication();
     $security = new TechOpsContentSync\Security();
+    
+    // Display settings errors
+    settings_errors('techops_github_settings');
     
     // Display admin page
     ?>
@@ -138,6 +186,69 @@ function techops_content_sync_admin_page() {
             <p>Debug Mode: <?php echo TECHOPS_CONTENT_SYNC_DEBUG ? 'Enabled' : 'Disabled'; ?></p>
             <p>Plugin Directory: <?php echo TECHOPS_CONTENT_SYNC_DIR; ?></p>
             <p>Plugin URL: <?php echo TECHOPS_CONTENT_SYNC_URL; ?></p>
+        </div>
+        
+        <div class="card">
+            <h2>GitHub Settings</h2>
+            <form method="post" action="">
+                <?php wp_nonce_field('techops_github_settings_update'); ?>
+                <input type="hidden" name="techops_github_settings" value="1">
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="github_username">GitHub Username</label></th>
+                        <td>
+                            <input type="text" id="github_username" name="github_username" 
+                                   value="<?php echo esc_attr($settings['github_username']); ?>" class="regular-text">
+                            <p class="description">Your GitHub username or organization name.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_repo">Repository Name</label></th>
+                        <td>
+                            <input type="text" id="github_repo" name="github_repo" 
+                                   value="<?php echo esc_attr($settings['github_repo']); ?>" class="regular-text">
+                            <p class="description">The name of the GitHub repository.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_token">Personal Access Token</label></th>
+                        <td>
+                            <input type="password" id="github_token" name="github_token" 
+                                   value="<?php echo esc_attr($settings['github_token']); ?>" class="regular-text">
+                            <p class="description">Your GitHub personal access token for accessing private repositories.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_file_path">Default File Path</label></th>
+                        <td>
+                            <input type="text" id="github_file_path" name="github_file_path" 
+                                   value="<?php echo esc_attr($settings['github_file_path']); ?>" class="regular-text">
+                            <p class="description">Default path to the file in the repository (e.g., config/settings.json).</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_download_path">Download Directory</label></th>
+                        <td>
+                            <input type="text" id="github_download_path" name="github_download_path" 
+                                   value="<?php echo esc_attr($settings['github_download_path']); ?>" class="regular-text">
+                            <p class="description">Directory where downloaded files will be stored (relative to plugin directory).</p>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button('Save GitHub Settings'); ?>
+            </form>
+            
+            <hr>
+            
+            <h3>Download File</h3>
+            <form method="post" action="">
+                <?php wp_nonce_field('techops_download_file'); ?>
+                <input type="hidden" name="download_github_file" value="1">
+                <p>
+                    <input type="submit" class="button button-primary" value="Download File">
+                    <span class="description">Downloads the configured file from GitHub.</span>
+                </p>
+            </form>
         </div>
         
         <div class="card">
