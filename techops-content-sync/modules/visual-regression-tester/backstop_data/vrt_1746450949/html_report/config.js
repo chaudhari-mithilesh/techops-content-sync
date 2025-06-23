@@ -1,0 +1,23 @@
+report({
+  "testSuite": "BackstopJS",
+  "tests": [
+    {
+      "pair": {
+        "reference": "../bitmaps_reference/vrt_1746450949_Test_Scenario_0_document_0_desktop.png",
+        "test": "../bitmaps_test/20250505-184550/vrt_1746450949_Test_Scenario_0_document_0_desktop.png",
+        "selector": "document",
+        "fileName": "vrt_1746450949_Test_Scenario_0_document_0_desktop.png",
+        "label": "Test Scenario",
+        "requireSameDimensions": true,
+        "misMatchThreshold": 0.1,
+        "url": "http://localhost:10099/netflix-clone/",
+        "referenceUrl": "https://en.wikipedia.org/wiki/Holi",
+        "expect": 0,
+        "viewportLabel": "desktop",
+        "error": "Reference file not found /home/shravani/Local Sites/visual-regression-tool/app/public/wp-content/plugins/visual-regression-tester/backstop_data/vrt_1746450949/bitmaps_reference/vrt_1746450949_Test_Scenario_0_document_0_desktop.png"
+      },
+      "status": "fail"
+    }
+  ],
+  "id": "vrt_1746450949"
+});

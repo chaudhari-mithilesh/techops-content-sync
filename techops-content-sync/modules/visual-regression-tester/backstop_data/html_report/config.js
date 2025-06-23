@@ -1,0 +1,24 @@
+report({
+  "testSuite": "BackstopJS",
+  "tests": [
+    {
+      "pair": {
+        "reference": "../bitmaps_reference/test_1744722453_Test_Page_0__0_desktop.png",
+        "test": "../bitmaps_test/20250506-094716/test_1744722453_Test_Page_0__0_desktop.png",
+        "selector": "",
+        "fileName": "test_1744722453_Test_Page_0__0_desktop.png",
+        "label": "Test Page",
+        "requireSameDimensions": false,
+        "misMatchThreshold": 35,
+        "url": "http://localhost:10089/student-dashboard/",
+        "referenceUrl": "https://eternalsystems.wisdmlabs.net/student-dashboard/",
+        "expect": 0,
+        "viewportLabel": "desktop",
+        "engineErrorMsg": "net::ERR_CONNECTION_REFUSED at http://localhost:10089/student-dashboard/",
+        "error": "Reference file not found /home/shravani/Local Sites/visual-regression-tool/app/public/wp-content/plugins/visual-regression-tester/backstop_data/bitmaps_reference/test_1744722453_Test_Page_0__0_desktop.png"
+      },
+      "status": "fail"
+    }
+  ],
+  "id": "test_1744722453"
+});

@@ -1,0 +1,290 @@
+/* Tasklist UI Styles */
+
+/* Main container */
+.wrap {
+    max-width: none;
+    margin-right: 20px;
+    margin-left: 20px;
+}
+
+/* Tabs */
+.nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+
+.nav-tab {
+    cursor: pointer;
+}
+
+/* Cards */
+.card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    max-width: none;
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.card h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Form styles */
+.form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+}
+
+.form-table td {
+    padding: 15px 10px;
+}
+
+.regular-text {
+    width: 25em;
+    max-width: 100%;
+}
+
+/* Table styles */
+.wp-list-table {
+    margin-top: 10px;
+}
+
+.wp-list-table th {
+    font-weight: 600;
+}
+
+.wp-list-table td {
+    vertical-align: middle;
+}
+
+.wp-list-table .check-column {
+    width: 2.2em;
+    padding: 11px 0 0 3px;
+}
+
+/* Status indicators */
+.needs-update {
+    background-color: #fff8e5 !important;
+}
+
+.missing {
+    background-color: #fef7f7 !important;
+}
+
+/* Action buttons */
+.button {
+    margin: 0 5px;
+}
+
+.button:first-child {
+    margin-left: 0;
+}
+
+/* Loading indicator */
+#loading-indicator {
+    margin: 20px 0;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.spinner {
+    float: none;
+    margin: 0 10px 0 0;
+}
+
+/* Notices */
+.notice {
+    margin: 5px 0 15px;
+    padding: 1px 12px;
+}
+
+.notice p {
+    margin: .5em 0;
+    padding: 2px;
+}
+
+/* Bulk actions */
+.tablenav {
+    margin: 6px 0 4px;
+    height: auto;
+    clear: both;
+}
+
+.tablenav .actions {
+    padding: 0;
+    margin: 0;
+    line-height: 2em;
+}
+
+.tablenav select {
+    margin-right: 5px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    .form-table th {
+        width: auto;
+        padding: 10px 0;
+    }
+    
+    .regular-text {
+        width: 100%;
+    }
+    
+    .wp-list-table .check-column {
+        padding: 8px 0 0 3px;
+    }
+    
+    .wp-list-table td {
+        padding: 8px 10px;
+    }
+}
+
+/*
+ * CSS for the TechOps Content Sync Tasklist Admin Page
+ */
+
+/* Layout adjustments for header and bulk actions */
+.wrap h1 + .card h2 {
+    display: flex;
+    justify-content: space-between; /* Pushes items to ends */
+    align-items: center; /* Vertically align items */
+    margin-top: 0; /* Adjust margin */
+    margin-bottom: 15px; /* Adjust margin */
+}
+
+.tablenav.top .bulkactions select {
+    margin-right: 8px; /* Standard spacing after select */
+    vertical-align: top; /* Align with button */
+}
+
+.tablenav.top .actions {
+    margin-bottom: 15px; /* Add some space below bulk actions */
+}
+
+/* Basic table styling - aligns with WordPress core .wp-list-table */
+.wp-list-table.striped tbody tr:nth-child(odd),
+.wp-list-table.widefat thead tr th,
+.wp-list-table.widefat thead tr td {
+    background-color: #f9f9f9;
+}
+
+.wp-list-table.widefat {
+    width: 100%; /* Make the table take full width of its container */
+    border-spacing: 0; /* Remove default spacing */
+    border-collapse: collapse; /* Collapse borders */
+}
+
+.wp-list-table.widefat th,
+.wp-list-table.widefat td {
+    padding: 10px 12px; /* Increased padding for better spacing */
+    vertical-align: middle;
+    border-bottom: 1px solid #e1e1e1; /* Add subtle row separator */
+}
+
+.wp-list-table.widefat thead th,
+.wp-list-table.widefat thead td {
+    border-bottom: 1px solid #dcdcdc; /* Slightly darker border for header */
+    position: sticky; /* Make the header sticky */
+    top: 0; /* Stick to the top of the container */
+    z-index: 1; /* Ensure the header is above the scrolling content */
+    background-color: #f9f9f9; /* Add a background color so content behind it doesn't show through */
+}
+
+.wp-list-table .check-column {
+    padding: 10px 0;
+    width: 2.5em; /* Slightly wider checkbox column */
+    text-align: center; /* Center checkbox */
+}
+
+.wp-list-table .column-name strong {
+    display: block;
+    font-weight: 600;
+}
+
+.wp-list-table .column-name em {
+    color: #646970;
+    font-style: normal;
+    font-size: 0.9em;
+}
+
+/* Status styling */
+.wp-list-table .column-status span {
+    display: inline-block;
+    padding: 3px 8px; /* Slightly more padding */
+    border-radius: 3px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.wp-list-table .status-synced {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.wp-list-table .status-missing {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.wp-list-table .status-needs-update {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* Action buttons styling */
+.wp-list-table .column-actions .button {
+    margin-right: 8px; /* Increased margin */
+    margin-bottom: 8px; /* Increased margin */
+    vertical-align: top;
+    padding: 4px 8px; /* Adjusted button padding */
+    line-height: 1.8; /* Adjusted line height */
+    height: auto; /* Allow height to adjust based on content */
+}
+
+/* Loading indicator styling */
+#loading-indicator {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    font-style: italic;
+    color: #555;
+}
+
+#loading-indicator .spinner {
+    margin-right: 10px;
+    margin-bottom: 0;
+    visibility: visible;
+}
+
+/* Notices styling */
+.wrap > .notice {
+    margin-top: 15px;
+}
+
+/* Version Manager column */
+.wp-list-table .column-version-manager {
+    width: 150px; /* Adjust width as needed */
+    min-width: 120px; /* Minimum width */
+    overflow-x: hidden; /* Hide horizontal overflow */
+    white-space: normal; /* Allow text wrapping if needed, though ellipsis will handle most cases */
+}
+
+.wp-list-table .column-version-manager select {
+    width: 100%; /* Make select take full width of its container */
+    box-sizing: border-box; /* Include padding and border in the element's total width */
+    max-width: 100%; /* Ensure it doesn't exceed column width */
+    overflow: hidden; /* Hide overflowing text within the select */
+    text-overflow: ellipsis; /* Show ellipsis for truncated text */
+    white-space: nowrap; /* Prevent text wrapping inside the select before ellipsis */
+} 

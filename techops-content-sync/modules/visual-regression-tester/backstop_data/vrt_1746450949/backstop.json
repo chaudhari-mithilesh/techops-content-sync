@@ -1,0 +1,50 @@
+{
+    "id": "vrt_1746450949",
+    "viewports": [
+        {
+            "label": "desktop",
+            "width": 1920,
+            "height": 1080
+        }
+    ],
+    "scenarios": [
+        {
+            "label": "Test Scenario",
+            "url": "http:\/\/localhost:10099\/netflix-clone\/",
+            "referenceUrl": "https:\/\/en.wikipedia.org\/wiki\/Holi",
+            "readyEvent": "",
+            "readySelector": "",
+            "delay": 2000,
+            "hideSelectors": [],
+            "removeSelectors": [],
+            "hoverSelector": "",
+            "clickSelector": "",
+            "postInteractionWait": 0,
+            "selectors": [],
+            "selectorExpansion": true,
+            "expect": 0,
+            "misMatchThreshold": 0.10000000000000001,
+            "requireSameDimensions": true
+        }
+    ],
+    "paths": {
+        "bitmaps_reference": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746450949\/bitmaps_reference",
+        "bitmaps_test": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746450949\/bitmaps_test",
+        "engine_scripts": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746450949\/engine_scripts",
+        "html_report": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746450949\/html_report",
+        "ci_report": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746450949\/ci_report"
+    },
+    "report": [
+        "browser"
+    ],
+    "engine": "puppeteer",
+    "engineOptions": {
+        "args": [
+            "--no-sandbox"
+        ]
+    },
+    "asyncCaptureLimit": 5,
+    "asyncCompareLimit": 50,
+    "debug": false,
+    "debugWindow": false
+}

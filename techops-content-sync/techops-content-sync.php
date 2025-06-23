@@ -3,13 +3,11 @@
  * Plugin Name: TechOps Content Sync
  * Plugin URI: https://example.com/techops-content-sync
  * Description: Syncs WordPress plugins and themes with a Git repository
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: TechOps
  * Author URI: https://example.com
  * Text Domain: techops-content-sync
  */
-
-namespace TechOpsContentSync;
 
 // If this file is called directly, abort.
 if (!defined('WPINC')) {
@@ -20,72 +18,22 @@ if (!defined('WPINC')) {
 define('TECHOPS_CONTENT_SYNC_VERSION', '1.0.0');
 define('TECHOPS_CONTENT_SYNC_DIR', plugin_dir_path(__FILE__));
 define('TECHOPS_CONTENT_SYNC_URL', plugin_dir_url(__FILE__));
-define('TECHOPS_CONTENT_SYNC_DEBUG', true);
-
-// Load Composer autoloader if it exists
-if (file_exists(TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php')) {
-    require_once TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php';
-}
-
-/**
- * Check plugin dependencies
- */
-function techops_content_sync_check_dependencies() {
-    $errors = [];
-    
-    // Check PHP version
-    if (version_compare(PHP_VERSION, '7.4', '<')) {
-        $errors[] = 'PHP 7.4 or higher is required.';
-    }
-    
-    // Check ZipArchive extension
-    if (!class_exists('ZipArchive')) {
-        $errors[] = 'PHP ZipArchive extension is required.';
-    }
-    
-    // Check if Composer autoload exists
-    if (!file_exists(TECHOPS_CONTENT_SYNC_DIR . 'vendor/autoload.php')) {
-        $errors[] = 'Composer dependencies are not installed. Please run composer install in the plugin directory.';
-    }
-    
-    return $errors;
-}
-
-/**
- * Display admin notices for dependency issues
- */
-function techops_content_sync_admin_notices() {
-    $dependency_errors = techops_content_sync_check_dependencies();
-    
-    if (!empty($dependency_errors)) {
-        ?>
-        <div class="notice notice-error">
-            <p><strong>TechOps Content Sync:</strong> The following requirements are not met:</p>
-            <ul>
-                <?php foreach ($dependency_errors as $error): ?>
-                    <li><?php echo esc_html($error); ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-        <?php
-    }
-}
-add_action('admin_notices', 'techops_content_sync_admin_notices');
+define('TECHOPS_CONTENT_SYNC_DEBUG', true); // Enable debugging by default
 
 // Autoloader for plugin classes
 spl_autoload_register(function ($class) {
-    // Check if the class is in our namespace
+    // Check if the class belongs to our namespace
     if (strpos($class, 'TechOpsContentSync\\') !== 0) {
         return;
     }
 
-    // Remove namespace from class name
-    $class_file = str_replace('TechOpsContentSync\\', '', $class);
-    // Convert class name format to file name format
-    $class_file = strtolower(preg_replace('/(?<!^)[A-Z]/', '-$0', $class_file));
-    // Build the file path
-    $file = TECHOPS_CONTENT_SYNC_DIR . 'includes/class-' . $class_file . '.php';
-
+    // Remove namespace prefix
+    $class = str_replace('TechOpsContentSync\\', '', $class);
+    
+    // Convert class name to file path
+    $file = TECHOPS_CONTENT_SYNC_DIR . 'includes/class-' . strtolower(str_replace('_', '-', $class)) . '.php';
+    
+    // Load the file if it exists
     if (file_exists($file)) {
         require_once $file;
     }
@@ -95,109 +43,44 @@ spl_autoload_register(function ($class) {
  * Initialize the plugin
  */
 function techops_content_sync_init() {
-    // Check dependencies before initializing
-    $dependency_errors = techops_content_sync_check_dependencies();
-    if (!empty($dependency_errors)) {
-        return;
-    }
-    
     // Log initialization
     error_log('TechOps Content Sync: Initializing plugin');
     
-    // Initialize Settings
-    $settings = new Settings();
-    $settings->register_settings();
-
-    // Initialize GitHub API Handler
-    $github_api = new GitHub_API_Handler($settings);
-
-    // Initialize Sync History
-    $sync_history = new Sync_History();
-
-    // Initialize Repository Handler
-    $repository_handler = new Repository_Handler($github_api);
-
-    // Initialize Package Detector
-    $package_detector = new Package_Detector();
-
-    // Initialize Package Installer
-    $package_installer = new Package_Installer($sync_history, $settings);
-
-    // Initialize Sync Manager
-    $sync_manager = new Sync_Manager(
-        $github_api,
-        $repository_handler,
-        $package_detector,
-        $package_installer,
-        $sync_history,
-        $settings
-    );
-
-    // Initialize API Endpoints
-    $api_endpoints = new API_Endpoints($sync_manager, $github_api);
+    // Load required files
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-api-endpoints.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-authentication.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-security.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-file-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-github-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-admin.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-ajax-handler.php';
+    require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/class-module-loader.php';
+    
+    // Initialize admin
+    new \TechOpsContentSync\Admin();
+    
+    // Initialize AJAX handler
+    new \TechOpsContentSync\Ajax_Handler();
+    
+    // Initialize API endpoints
+    $api_endpoints = new \TechOpsContentSync\API_Endpoints();
     add_action('rest_api_init', [$api_endpoints, 'register_routes']);
+    
+    // Initialize GitHub handler
+    $github_handler = new \TechOpsContentSync\GitHub_Handler();
+    
+    // Initialize module loader
+    \TechOpsContentSync\Module_Loader::get_instance();
     
     // Log API init hook
     error_log('TechOps Content Sync: Added REST API init hook');
-
-    // Add admin menu
-    add_action('admin_menu', function() {
-        add_menu_page(
-            'TechOps Content Sync',
-            'Content Sync',
-            'manage_options',
-            'techops-content-sync',
-            function() {
-                require_once TECHOPS_CONTENT_SYNC_DIR . 'includes/git-form.php';
-            },
-            'dashicons-update',
-            30
-        );
-    });
-
-    // Enqueue admin scripts and styles
-    add_action('admin_enqueue_scripts', function($hook) {
-        if ($hook !== 'toplevel_page_techops-content-sync') {
-            return;
-        }
-
-        wp_enqueue_style(
-            'techops-content-sync-admin',
-            TECHOPS_CONTENT_SYNC_URL . 'assets/css/admin.css',
-            [],
-            TECHOPS_CONTENT_SYNC_VERSION
-        );
-
-        wp_enqueue_script(
-            'techops-content-sync-admin',
-            TECHOPS_CONTENT_SYNC_URL . 'assets/js/admin.js',
-            ['jquery'],
-            TECHOPS_CONTENT_SYNC_VERSION,
-            true
-        );
-
-        wp_localize_script('techops-content-sync-admin', 'techopsContentSync', [
-            'apiUrl' => rest_url('techops/v1/'),
-            'nonce' => wp_create_nonce('wp_rest')
-        ]);
-    });
 }
-add_action('plugins_loaded', 'TechOpsContentSync\\techops_content_sync_init');
+add_action('init', 'techops_content_sync_init');
 
 /**
  * Activation hook
  */
 function techops_content_sync_activate() {
-    $dependency_errors = techops_content_sync_check_dependencies();
-    
-    if (!empty($dependency_errors)) {
-        deactivate_plugins(plugin_basename(__FILE__));
-        wp_die(
-            'TechOps Content Sync cannot be activated. The following requirements are not met:<br>' .
-            implode('<br>', $dependency_errors)
-        );
-    }
-    
     error_log('TechOps Content Sync: Plugin activated');
     
     // Create necessary directories
@@ -208,10 +91,10 @@ function techops_content_sync_activate() {
         wp_mkdir_p($techops_dir);
     }
     
-    // Create temp directory
-    $temp_dir = $techops_dir . '/temp';
-    if (!file_exists($temp_dir)) {
-        wp_mkdir_p($temp_dir);
+    // Create git-content directory
+    $git_content_dir = TECHOPS_CONTENT_SYNC_DIR . 'git-content';
+    if (!file_exists($git_content_dir)) {
+        wp_mkdir_p($git_content_dir);
     }
     
     // Create log file
@@ -222,24 +105,8 @@ function techops_content_sync_activate() {
     
     // Flush rewrite rules
     flush_rewrite_rules();
-
-    // Create required directories
-    $dirs = [
-        WP_CONTENT_DIR . '/techops-temp',
-        WP_CONTENT_DIR . '/techops-backups'
-    ];
-
-    foreach ($dirs as $dir) {
-        if (!file_exists($dir)) {
-            wp_mkdir_p($dir);
-        }
-    }
-
-    // Create database tables
-    $installer = new Installer();
-    $installer->run();
 }
-register_activation_hook(__FILE__, 'TechOpsContentSync\\techops_content_sync_activate');
+register_activation_hook(__FILE__, 'techops_content_sync_activate');
 
 /**
  * Deactivation hook
@@ -249,31 +116,24 @@ function techops_content_sync_deactivate() {
     
     // Flush rewrite rules
     flush_rewrite_rules();
-
-    // Clean up temporary files
-    $dirs = [
-        WP_CONTENT_DIR . '/techops-temp'
-    ];
-
-    foreach ($dirs as $dir) {
-        if (is_dir($dir)) {
-            $files = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
-            );
-
-            foreach ($files as $file) {
-                if ($file->isDir()) {
-                    rmdir($file->getRealPath());
-                } else {
-                    unlink($file->getRealPath());
-                }
-            }
-            rmdir($dir);
-        }
-    }
 }
-register_deactivation_hook(__FILE__, 'TechOpsContentSync\\techops_content_sync_deactivate');
+register_deactivation_hook(__FILE__, 'techops_content_sync_deactivate');
+
+/**
+ * Add admin menu
+ */
+function techops_content_sync_admin_menu() {
+    add_menu_page(
+        'TechOps Content Sync',
+        'TechOps Sync',
+        'manage_options',
+        'techops-content-sync',
+        'techops_content_sync_admin_page',
+        'dashicons-update',
+        30
+    );
+}
+// add_action('admin_menu', 'techops_content_sync_admin_menu');
 
 /**
  * Admin page callback
@@ -284,154 +144,256 @@ function techops_content_sync_admin_page() {
         return;
     }
     
+    // Handle form submissions
+    if (isset($_POST['techops_github_settings']) && check_admin_referer('techops_github_settings_update')) {
+        $settings = array(
+            'github_username' => sanitize_text_field($_POST['github_username']),
+            'github_repo' => sanitize_text_field($_POST['github_repo']),
+            'github_token' => sanitize_text_field($_POST['github_token']),
+            'github_file_path' => sanitize_text_field($_POST['github_file_path']),
+            'github_download_path' => sanitize_text_field($_POST['github_download_path'])
+        );
+        
+        update_option('techops_github_settings', $settings);
+        add_settings_error('techops_github_settings', 'settings_updated', 'GitHub settings updated successfully.', 'updated');
+    }
+    
+    // Handle file download
+    if (isset($_POST['download_github_file']) && check_admin_referer('techops_download_file')) {
+        $github_handler = new TechOpsContentSync\GitHub_Handler();
+        $result = $github_handler->download_file();
+        
+        if (is_wp_error($result)) {
+            add_settings_error('techops_github_settings', 'download_error', 'Error downloading file: ' . $result->get_error_message(), 'error');
+        } else {
+            add_settings_error('techops_github_settings', 'download_success', 'File downloaded successfully to: ' . esc_html($result), 'updated');
+        }
+    }
+    
+    // Get current settings
+    $settings = get_option('techops_github_settings', array(
+        'github_username' => '',
+        'github_repo' => '',
+        'github_token' => '',
+        'github_file_path' => '',
+        'github_download_path' => 'git-content/'
+    ));
+    
+    // Get plugin status
+    $api_endpoints = new TechOpsContentSync\API_Endpoints();
+    $auth = new TechOpsContentSync\Authentication();
+    $security = new TechOpsContentSync\Security();
+    
+    // Display settings errors
+    settings_errors('techops_github_settings');
+    
+    // Display admin page
     ?>
-    <div class="wrap techops-content-sync-wrap">
+    <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
         
         <div class="card">
-            <h2>Git Repository Integration</h2>
-            <form id="git-repo-form" method="post">
-                <?php wp_nonce_field('techops_git_action', 'techops_git_nonce'); ?>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row"><label for="repo-url">Git Repository URL</label></th>
-                        <td>
-                            <input type="url" id="repo-url" name="repo_url" class="regular-text" required>
-                            <p class="description">Enter the URL of the Git repository</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row"><label for="folder-path">Folder Path</label></th>
-                        <td>
-                            <input type="text" id="folder-path" name="folder_path" class="regular-text" required>
-                            <p class="description">Enter the path to the folder within the repository</p>
-                        </td>
-                    </tr>
-                </table>
-                <p class="submit">
-                    <button type="submit" class="button button-primary">Download and Install</button>
-                </p>
-            </form>
-            
-            <!-- Status Messages Container -->
-            <div id="status-message"></div>
-            
-            <!-- Operation Log Container -->
-            <div id="operation-log" class="operation-log-container" style="display: none;">
-                <h3>Operation Log</h3>
-                <div class="log-entries"></div>
-            </div>
+            <h2>Plugin Status</h2>
+            <p>Version: <?php echo TECHOPS_CONTENT_SYNC_VERSION; ?></p>
+            <p>Debug Mode: <?php echo TECHOPS_CONTENT_SYNC_DEBUG ? 'Enabled' : 'Disabled'; ?></p>
+            <p>Plugin Directory: <?php echo TECHOPS_CONTENT_SYNC_DIR; ?></p>
+            <p>Plugin URL: <?php echo TECHOPS_CONTENT_SYNC_URL; ?></p>
         </div>
         
         <div class="card">
-            <h2>Recent Operations</h2>
-            <div id="recent-operations">
-                <?php
-                // Get recent operations from the database
-                global $wpdb;
-                $table_name = $wpdb->prefix . 'techops_sync_history';
-                $recent_ops = $wpdb->get_results(
-                    "SELECT * FROM {$table_name} ORDER BY started_at DESC LIMIT 10"
-                );
-                
-                if ($recent_ops) {
-                    echo '<table class="widefat">';
-                    echo '<thead><tr>';
-                    echo '<th>Repository</th>';
-                    echo '<th>Status</th>';
-                    echo '<th>Started</th>';
-                    echo '<th>Completed</th>';
-                    echo '<th>Result</th>';
-                    echo '</tr></thead><tbody>';
-                    
-                    foreach ($recent_ops as $op) {
-                        $status_class = '';
-                        switch ($op->status) {
-                            case 'completed':
-                                $status_class = 'success';
-                                break;
-                            case 'failed':
-                                $status_class = 'error';
-                                break;
-                            default:
-                                $status_class = 'info';
-                        }
-                        
-                        echo "<tr class='status-{$status_class}'>";
-                        echo "<td>" . esc_html($op->repository_url) . "</td>";
-                        echo "<td>" . esc_html(ucfirst($op->status)) . "</td>";
-                        echo "<td>" . esc_html($op->started_at) . "</td>";
-                        echo "<td>" . esc_html($op->completed_at ?: '-') . "</td>";
-                        echo "<td>" . esc_html($op->error_message ?: 'Success') . "</td>";
-                        echo "</tr>";
-                    }
-                    
-                    echo '</tbody></table>';
-                } else {
-                    echo '<p>No recent operations found.</p>';
-                }
-                ?>
-            </div>
+            <h2>GitHub Settings</h2>
+            <form method="post" action="">
+                <?php wp_nonce_field('techops_github_settings_update'); ?>
+                <input type="hidden" name="techops_github_settings" value="1">
+                <table class="form-table">
+                    <tr>
+                        <th scope="row"><label for="github_username">GitHub Username</label></th>
+                        <td>
+                            <input type="text" id="github_username" name="github_username" 
+                                   value="<?php echo esc_attr($settings['github_username']); ?>" class="regular-text">
+                            <p class="description">Your GitHub username or organization name.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_repo">Repository Name</label></th>
+                        <td>
+                            <input type="text" id="github_repo" name="github_repo" 
+                                   value="<?php echo esc_attr($settings['github_repo']); ?>" class="regular-text">
+                            <p class="description">The name of the GitHub repository.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_token">Personal Access Token</label></th>
+                        <td>
+                            <input type="password" id="github_token" name="github_token" 
+                                   value="<?php echo esc_attr($settings['github_token']); ?>" class="regular-text">
+                            <p class="description">Your GitHub personal access token for accessing private repositories.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_file_path">Default File Path</label></th>
+                        <td>
+                            <input type="text" id="github_file_path" name="github_file_path" 
+                                   value="<?php echo esc_attr($settings['github_file_path']); ?>" class="regular-text">
+                            <p class="description">Default path to the file in the repository (e.g., config/settings.json).</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><label for="github_download_path">Download Directory</label></th>
+                        <td>
+                            <input type="text" id="github_download_path" name="github_download_path" 
+                                   value="<?php echo esc_attr($settings['github_download_path']); ?>" class="regular-text">
+                            <p class="description">Directory where downloaded files will be stored (relative to plugin directory).</p>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button('Save GitHub Settings'); ?>
+            </form>
+            
+            <hr>
+            
+            <h3>Download File</h3>
+            <form method="post" action="">
+                <?php wp_nonce_field('techops_download_file'); ?>
+                <input type="hidden" name="download_github_file" value="1">
+                <p>
+                    <input type="submit" class="button button-primary" value="Download File">
+                    <span class="description">Downloads the configured file from GitHub.</span>
+                </p>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>REST API Status</h2>
+            <p>API Base URL: <?php echo esc_url(rest_url('techops/v1')); ?></p>
+            <p>Available Endpoints:</p>
+            <ul>
+                <li>GET /plugins/list - List all plugins</li>
+                <li>POST /plugins/activate/{slug} - Activate a plugin</li>
+                <li>POST /plugins/deactivate/{slug} - Deactivate a plugin</li>
+                <li>GET /plugins/download/{slug} - Download a plugin</li>
+                <li>GET /themes/list - List all themes</li>
+                <li>POST /themes/activate/{slug} - Activate a theme</li>
+                <li>POST /themes/deactivate/{slug} - Deactivate a theme</li>
+                <li>GET /themes/download/{slug} - Download a theme</li>
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h2>Authentication</h2>
+            <p>Authentication Method: Basic Auth</p>
+            <p>Required Capability: manage_options</p>
+            <?php if (TECHOPS_CONTENT_SYNC_DEBUG): ?>
+                <p>Debug Token: d2lzZG06czF6WiBDSWxJIDF2QmMgOWU1biBZUk1MIDFrU0w=</p>
+            <?php endif; ?>
+        </div>
+        
+        <div class="card">
+            <h2>Logs</h2>
+            <?php
+            $upload_dir = wp_upload_dir();
+            $log_file = $upload_dir['basedir'] . '/techops-content-sync/techops-content-sync.log';
+            
+            if (file_exists($log_file)) {
+                $logs = file_get_contents($log_file);
+                echo '<pre>' . esc_html($logs) . '</pre>';
+            } else {
+                echo '<p>No logs found.</p>';
+            }
+            ?>
         </div>
     </div>
     <?php
 }
 
+// Add AJAX action for fetching available versions
+add_action('wp_ajax_techops_get_available_versions', 'techops_get_available_versions_callback');
+
 /**
- * AJAX handler for getting recent operations
+ * AJAX callback to fetch available versions for a plugin or theme.
  */
-function techops_get_recent_operations() {
-    if (!current_user_can('manage_options')) {
-        wp_send_json_error('Unauthorized');
-        return;
+function techops_get_available_versions_callback() {
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'techops_content_sync_nonce')) {
+        wp_send_json_error('Invalid nonce.');
+        wp_die();
     }
-    
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'techops_sync_history';
-    $recent_ops = $wpdb->get_results(
-        "SELECT * FROM {$table_name} ORDER BY started_at DESC LIMIT 10"
-    );
-    
-    ob_start();
-    
-    if ($recent_ops) {
-        echo '<table class="widefat">';
-        echo '<thead><tr>';
-        echo '<th>Repository</th>';
-        echo '<th>Status</th>';
-        echo '<th>Started</th>';
-        echo '<th>Completed</th>';
-        echo '<th>Result</th>';
-        echo '</tr></thead><tbody>';
-        
-        foreach ($recent_ops as $op) {
-            $status_class = '';
-            switch ($op->status) {
-                case 'completed':
-                    $status_class = 'success';
-                    break;
-                case 'failed':
-                    $status_class = 'error';
-                    break;
-                default:
-                    $status_class = 'info';
-            }
-            
-            echo "<tr class='status-{$status_class}'>";
-            echo "<td>" . esc_html($op->repository_url) . "</td>";
-            echo "<td>" . esc_html(ucfirst($op->status)) . "</td>";
-            echo "<td>" . esc_html($op->started_at) . "</td>";
-            echo "<td>" . esc_html($op->completed_at ?: '-') . "</td>";
-            echo "<td>" . esc_html($op->error_message ?: 'Success') . "</td>";
-            echo "</tr>";
+
+    // Get item type and slug from POST data
+    $item_type = sanitize_text_field($_POST['item_type']);
+    $item_slug = sanitize_text_field($_POST['item_slug']);
+
+    if (empty($item_type) || empty($item_slug)) {
+        wp_send_json_error('Missing item type or slug.');
+        wp_die();
+    }
+
+    $versions = [];
+
+    // Include necessary files for API calls
+    require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+    require_once ABSPATH . 'wp-admin/includes/theme.php';
+
+    if ($item_type === 'plugin') {
+        $api = plugins_api('plugin_information', [
+            'slug' => $item_slug,
+            'fields' => [
+                'versions' => true,
+                'sections' => false,
+                'reviews' => false,
+                'downloaded' => false,
+                'last_updated' => false,
+                'tags' => false,
+                'compatibility' => false,
+                'donate_link' => false,
+                'requires' => false,
+                'rating' => false,
+                'ratings' => false,
+                'homepage' => false,
+                'short_description' => false,
+            ],
+        ]);
+
+        if (!is_wp_error($api) && isset($api->versions) && is_array($api->versions)) {
+            // The versions array from plugins_api is typically version => download_link
+            // We just need the version numbers (keys)
+            $versions = array_keys($api->versions);
+            // Sort versions in descending order (newest first)
+            usort($versions, 'version_compare');
+            $versions = array_reverse($versions);
         }
-        
-        echo '</tbody></table>';
-    } else {
-        echo '<p>No recent operations found.</p>';
+
+    } else if ($item_type === 'theme') {
+        $api = themes_api('theme_information', [
+            'slug' => $item_slug,
+            'fields' => [
+                'versions' => true,
+                'sections' => false,
+                'tags' => false,
+                'rating' => false,
+                'ratings' => false,
+                'downloaded' => false,
+                'last_updated' => false,
+                'homepage' => false,
+                'screenshots' => false,
+            ],
+        ]);
+
+         if (!is_wp_error($api) && isset($api->versions) && is_array($api->versions)) {
+             // The versions array from themes_api is also typically version => download_link
+             // We just need the version numbers (keys)
+             $versions = array_keys($api->versions);
+             // Sort versions in descending order (newest first)
+             usort($versions, 'version_compare');
+             $versions = array_reverse($versions);
+        }
     }
-    
-    $html = ob_get_clean();
-    wp_send_json_success($html);
-}
-add_action('wp_ajax_techops_get_recent_operations', 'techops_get_recent_operations'); 
+
+    if (!empty($versions)) {
+        wp_send_json_success($versions);
+    } else {
+        wp_send_json_error('No versions found or error fetching data.');
+    }
+
+    wp_die();
+} 

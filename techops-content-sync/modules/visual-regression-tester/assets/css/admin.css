@@ -1,0 +1,62 @@
+.techops-visual-testing-wrap .card {
+    max-width: 100%;
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.techops-visual-testing-wrap .card h2 {
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.techops-visual-testing-wrap .button {
+    margin-right: 10px;
+}
+
+.techops-visual-testing-wrap .wp-list-table {
+    margin-top: 10px;
+}
+
+.techops-visual-testing-wrap .view-test {
+    text-decoration: none;
+}
+
+.techops-visual-testing-wrap .view-test:hover {
+    text-decoration: underline;
+}
+
+/* Test status colors */
+.techops-test-status-passed {
+    color: #46b450;
+}
+
+.techops-test-status-failed {
+    color: #dc3232;
+}
+
+.techops-test-status-pending {
+    color: #ffb900;
+}
+
+/* Screenshot comparison view */
+.techops-screenshot-comparison {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.techops-screenshot-comparison img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+}
+
+.techops-screenshot-comparison .screenshot-container {
+    flex: 1;
+}
+
+.techops-screenshot-comparison .screenshot-label {
+    font-weight: bold;
+    margin-bottom: 10px;
+} 

@@ -1,0 +1,86 @@
+.vrt-container {
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+.vrt-form-container {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.vrt-form-group {
+    margin-bottom: 20px;
+}
+
+.vrt-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.vrt-form-group input[type="url"] {
+    width: 100%;
+    max-width: 100%;
+}
+
+.vrt-form-group .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 5px;
+}
+
+#vrt-results-container {
+    margin-top: 20px;
+    display: none;
+}
+
+#vrt-loader {
+    display: none;
+    padding: 15px;
+    background-color: #f0f6fc;
+    border-left: 4px solid #72aee6;
+    margin: 10px 0;
+}
+
+#vrt-loader .spinner {
+    float: left;
+    margin-right: 10px;
+    margin-top: 0;
+}
+
+#vrt-loader p {
+    margin: 0.5em 0;
+    line-height: 1.5;
+}
+
+#vrt-results {
+    display: none;
+    margin: 10px 0;
+}
+
+#vrt-results .notice {
+    margin: 0;
+}
+
+#vrt-report-buttons {
+    display: none;
+    margin-top: 20px;
+}
+
+#vrt-view-report,
+#vrt-download-report {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+#vrt-view-report a,
+#vrt-download-report a {
+    text-decoration: none;
+}
+
+#vrt-test-form input[type="submit"]:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+} 

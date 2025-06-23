@@ -1,0 +1,50 @@
+{
+    "id": "vrt_1746451287",
+    "viewports": [
+        {
+            "label": "desktop",
+            "width": 1920,
+            "height": 1080
+        }
+    ],
+    "scenarios": [
+        {
+            "label": "Test Scenario",
+            "url": "https:\/\/wisdmlabs:wisdm101@playmeo.wisdmlabs.net\/",
+            "referenceUrl": "https:\/\/playmeo:playmeostaging@playmeo.staging.tempurl.host\/",
+            "readyEvent": "",
+            "readySelector": "",
+            "delay": 5000,
+            "hideSelectors": [],
+            "removeSelectors": [],
+            "hoverSelector": "",
+            "clickSelector": "",
+            "postInteractionWait": 0,
+            "selectors": [],
+            "selectorExpansion": true,
+            "expect": 0,
+            "misMatchThreshold": 5,
+            "requireSameDimensions": false
+        }
+    ],
+    "paths": {
+        "bitmaps_reference": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746451287\/bitmaps_reference",
+        "bitmaps_test": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746451287\/bitmaps_test",
+        "engine_scripts": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746451287\/engine_scripts",
+        "html_report": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746451287\/html_report",
+        "ci_report": "\/home\/shravani\/Local Sites\/visual-regression-tool\/app\/public\/wp-content\/plugins\/visual-regression-tester\/backstop_data\/vrt_1746451287\/ci_report"
+    },
+    "report": [
+        "browser"
+    ],
+    "engine": "puppeteer",
+    "engineOptions": {
+        "args": [
+            "--no-sandbox"
+        ]
+    },
+    "asyncCaptureLimit": 5,
+    "asyncCompareLimit": 50,
+    "debug": false,
+    "debugWindow": false
+}

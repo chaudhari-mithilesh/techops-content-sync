@@ -1,0 +1,50 @@
+{
+    "id": "test_1744722453",
+    "viewports": [
+        {
+            "name": "desktop",
+            "width": 1920,
+            "height": 1080
+        }
+    ],
+    "scenarios": [
+        {
+            "label": "Test Page",
+            "url": "http://localhost:10089/student-dashboard/",
+            "referenceUrl": "https://eternalsystems.wisdmlabs.net/student-dashboard/",
+            "readyEvent": "",
+            "readySelector": "",
+            "delay": 5000,
+            "hideSelectors": [],
+            "removeSelectors": [],
+            "hoverSelector": "",
+            "clickSelector": "",
+            "postInteractionWait": 0,
+            "selectors": [],
+            "selectorExpansion": true,
+            "expect": 0,
+            "misMatchThreshold": 35,
+            "requireSameDimensions": false
+        }
+    ],
+    "paths": {
+        "bitmaps_reference": "backstop_data/bitmaps_reference",
+        "bitmaps_test": "backstop_data/bitmaps_test",
+        "engine_scripts": "backstop_data/engine_scripts",
+        "html_report": "backstop_data/html_report",
+        "ci_report": "backstop_data/ci_report"
+    },
+    "report": [
+        "browser"
+    ],
+    "engine": "puppeteer",
+    "engineOptions": {
+        "args": [
+            "--no-sandbox"
+        ]
+    },
+    "asyncCaptureLimit": 5,
+    "asyncCompareLimit": 50,
+    "debug": false,
+    "debugWindow": false
+}

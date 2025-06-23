@@ -1,0 +1,81 @@
+#vrt-site-wide-audit-form {
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+#vrt-site-wide-audit-form .form-table {
+    margin-top: 20px;
+}
+
+#vrt-site-wide-audit-form .form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+}
+
+#vrt-site-wide-audit-form .form-table td {
+    padding: 15px 10px;
+}
+
+#vrt-site-wide-audit-form input[type="text"],
+#vrt-site-wide-audit-form input[type="password"] {
+    width: 100%;
+    max-width: 400px;
+}
+
+#vrt-site-wide-audit-form .auth-fields {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#vrt-site-wide-audit-form .auth-fields label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+#vrt-site-wide-audit-form .auth-fields input {
+    margin-bottom: 10px;
+}
+
+#vrt-loading {
+    display: none;
+    margin: 20px 0;
+    text-align: center;
+}
+
+#vrt-loading .spinner {
+    float: none;
+    margin: 0;
+}
+
+#vrt-results {
+    margin: 20px 0;
+    display: none;
+}
+
+#vrt-results .notice {
+    margin: 0;
+}
+
+#vrt-results .button {
+    margin-top: 10px;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 782px) {
+    #vrt-site-wide-audit-form .form-table th {
+        width: 100%;
+        padding: 10px 0;
+    }
+
+    #vrt-site-wide-audit-form .form-table td {
+        padding: 0 0 10px;
+    }
+
+    #vrt-site-wide-audit-form input[type="text"],
+    #vrt-site-wide-audit-form input[type="password"] {
+        max-width: 100%;
+    }
+} 
