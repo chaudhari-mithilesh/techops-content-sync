@@ -54,7 +54,7 @@ class Visual_Regression_Tester {
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_scripts' ) );
 		add_action( 'wp_ajax_vrt_run_test', array( $this, 'handle_ajax_request' ) );
-		// add_action( 'wp_ajax_vrt_test_connection', array( $this, 'handle_test_connection' ) );
+		add_action( 'wp_ajax_vrt_test_connection', array( $this, 'handle_test_connection' ) );
 		// add_action( 'wp_ajax_vrt_test_sitemap_connection', array( $this, 'handle_test_sitemap_connection' ) );
 	}
 
@@ -180,57 +180,57 @@ class Visual_Regression_Tester {
 	 *
 	 * @return void
 	 */
-	// public function handle_test_connection() {
-	// Verify nonce.
-	// if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'vrt_single_test' ) ) {
-	// wp_send_json_error( array(
-	// 'message' => 'Invalid nonce',
-	// ) );
-	// return;
-	// }
+	public function handle_test_connection() {
+		// Verify nonce.
+		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['nonce'] ) ), 'vrt_single_test' ) ) {
+			wp_send_json_error( array(
+				'message' => 'Invalid nonce',
+			) );
+			return;
+		}
 
-	// Get URLs.
-	// $reference_url = isset( $_POST['reference_url'] ) ? esc_url_raw( wp_unslash( $_POST['reference_url'] ) ) : '';
-	// $test_url = isset( $_POST['test_url'] ) ? esc_url_raw( wp_unslash( $_POST['test_url'] ) ) : '';
+		// Get URLs.
+		$reference_url = isset( $_POST['reference_url'] ) ? esc_url_raw( wp_unslash( $_POST['reference_url'] ) ) : '';
+		$test_url = isset( $_POST['test_url'] ) ? esc_url_raw( wp_unslash( $_POST['test_url'] ) ) : '';
 
-	// if ( empty( $reference_url ) || empty( $test_url ) ) {
-	// wp_send_json_error( array(
-	// 'message' => 'Both URLs are required',
-	// ) );
-	// return;
-	// }
+		if ( empty( $reference_url ) || empty( $test_url ) ) {
+			wp_send_json_error( array(
+				'message' => 'Both URLs are required',
+			) );
+			return;
+		}
 
-	// Get authentication credentials.
-	// $reference_auth = array(
-	// 'username' => isset( $_POST['reference_auth_username'] ) ? sanitize_text_field( wp_unslash( $_POST['reference_auth_username'] ) ) : '',
-	// 'password' => isset( $_POST['reference_auth_password'] ) ? sanitize_text_field( wp_unslash( $_POST['reference_auth_password'] ) ) : '',
-	// );
+		// Get authentication credentials.
+		$reference_auth = array(
+			'username' => isset( $_POST['reference_auth_username'] ) ? sanitize_text_field( wp_unslash( $_POST['reference_auth_username'] ) ) : '',
+			'password' => isset( $_POST['reference_auth_password'] ) ? sanitize_text_field( wp_unslash( $_POST['reference_auth_password'] ) ) : '',
+		);
 
-	// $test_auth = array(
-	// 'username' => isset( $_POST['test_auth_username'] ) ? sanitize_text_field( wp_unslash( $_POST['test_auth_username'] ) ) : '',
-	// 'password' => isset( $_POST['test_auth_password'] ) ? sanitize_text_field( wp_unslash( $_POST['test_auth_password'] ) ) : '',
-	// );
+		$test_auth = array(
+			'username' => isset( $_POST['test_auth_username'] ) ? sanitize_text_field( wp_unslash( $_POST['test_auth_username'] ) ) : '',
+			'password' => isset( $_POST['test_auth_password'] ) ? sanitize_text_field( wp_unslash( $_POST['test_auth_password'] ) ) : '',
+		);
 
-	// Test reference URL.
-	// $reference_accessible = $this->test_url_connection( $reference_url, $reference_auth );
-	// $test_accessible = $this->test_url_connection( $test_url, $test_auth );
+		// Test reference URL.
+		$reference_accessible = $this->test_url_connection( $reference_url, $reference_auth );
+		$test_accessible = $this->test_url_connection( $test_url, $test_auth );
 
-	// if ( $reference_accessible && $test_accessible ) {
-	// wp_send_json_success(
-	// array(
-	// 'message' => 'Both URLs are accessible',
-	// )
-	// );
-	// } else {
-	// wp_send_json_error(
-	// array(
-	// 'reference_needs_auth' => ! $reference_accessible,
-	// 'test_needs_auth' => ! $test_accessible,
-	// 'message' => 'Authentication required for one or both URLs',
-	// )
-	// );
-	// }
-	// }
+		if ( $reference_accessible && $test_accessible ) {
+			wp_send_json_success(
+				array(
+					'message' => 'Both URLs are accessible',
+				)
+			);
+		} else {
+			wp_send_json_error(
+				array(
+					'reference_needs_auth' => ! $reference_accessible,
+					'test_needs_auth' => ! $test_accessible,
+					'message' => 'Authentication required for one or both URLs',
+				)
+			);
+		}
+	}
 
 	/**
 	 * Test if a URL is accessible.

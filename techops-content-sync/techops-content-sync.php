@@ -3,7 +3,7 @@
  * Plugin Name: TechOps Content Sync
  * Plugin URI: https://example.com/techops-content-sync
  * Description: Syncs WordPress plugins and themes with a Git repository
- * Version: 1.1.0
+ * Version: 1.1.3
  * Author: TechOps
  * Author URI: https://example.com
  * Text Domain: techops-content-sync
@@ -396,4 +396,41 @@ function techops_get_available_versions_callback() {
     }
 
     wp_die();
-} 
+}
+
+// Add AJAX action for Test Connection
+add_action('wp_ajax_techops_test_connection', 'techops_test_connection_callback');
+
+function techops_test_connection_callback() {
+    // Accept both nonces for compatibility
+    $nonce = isset($_POST['nonce']) ? $_POST['nonce'] : '';
+    $valid_nonce = false;
+    if ($nonce && wp_verify_nonce($nonce, 'techops_content_sync_nonce')) {
+        $valid_nonce = true;
+    } elseif ($nonce && wp_verify_nonce($nonce, 'techops_visual_testing')) {
+        $valid_nonce = true;
+    }
+    if (!$valid_nonce) {
+        wp_send_json_error(['message' => 'Invalid nonce.']);
+        wp_die();
+    }
+    $reference_url = isset($_POST['reference_url']) ? esc_url_raw($_POST['reference_url']) : '';
+    $test_url = isset($_POST['test_url']) ? esc_url_raw($_POST['test_url']) : '';
+    if (empty($reference_url) || empty($test_url)) {
+        wp_send_json_error(['message' => 'Both URLs are required.']);
+        wp_die();
+    }
+    $ref_response = wp_remote_get($reference_url, ['timeout' => 10]);
+    $test_response = wp_remote_get($test_url, ['timeout' => 10]);
+    $ref_ok = !is_wp_error($ref_response) && intval(wp_remote_retrieve_response_code($ref_response)) >= 200 && intval(wp_remote_retrieve_response_code($ref_response)) < 300;
+    $test_ok = !is_wp_error($test_response) && intval(wp_remote_retrieve_response_code($test_response)) >= 200 && intval(wp_remote_retrieve_response_code($test_response)) < 300;
+    if ($ref_ok && $test_ok) {
+        wp_send_json_success(['message' => 'Both URLs are accessible.']);
+    } else {
+        $msg = 'Connection failed:';
+        if (!$ref_ok) $msg .= ' Reference URL not accessible.';
+        if (!$test_ok) $msg .= ' Test URL not accessible.';
+        wp_send_json_error(['message' => $msg]);
+    }
+    wp_die();
+}

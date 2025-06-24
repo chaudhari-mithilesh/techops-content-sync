@@ -33,6 +33,7 @@ $options = get_option('techops_visual_testing_settings');
                     <button type="button" class="button" id="test-connection">Test Connection</button>
                     <button type="submit" class="button button-primary" id="run-single-test">Run Test</button>
                 </p>
+                <p id="test-connection-result" style="margin-top:10px;"></p>
             </form>
         </div>
     </div>
@@ -159,8 +160,39 @@ jQuery(document).ready(function($) {
     // Test Connection (Single Test)
     $('#test-connection').on('click', function(e) {
         e.preventDefault();
-        alert('Test Connection functionality needs to be implemented in PHP.');
-        // You would typically make an AJAX call here to test the URLs
+        const referenceUrl = $('#reference_url').val();
+        const testUrl = $('#test_url').val();
+        const nonce = $('#single-test-form input[name="techops_visual_testing_nonce"]').val();
+        const $btn = $(this);
+        const $resultPara = $('#test-connection-result');
+        if ($resultPara.length === 0) {
+            $btn.parent().append('<p id="test-connection-result" style="margin-top:10px;"></p>');
+        }
+        $btn.prop('disabled', true).text('Testing...');
+        $('#test-connection-result').removeClass('test-success test-fail').css('color', '').text('Testing connection...');
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'techops_test_connection',
+                reference_url: referenceUrl,
+                test_url: testUrl,
+                nonce: nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#test-connection-result').text('Test Connection Successful: Both URLs are accessible.').css({color: '#155724', background: '#d4edda', padding: '8px', 'border-radius': '4px', 'margin-top': '10px'}).addClass('test-success');
+                } else {
+                    $('#test-connection-result').text('Test Connection Failed: ' + (response.data && response.data.message ? response.data.message : 'Unknown error')).css({color: '#721c24', background: '#f8d7da', padding: '8px', 'border-radius': '4px', 'margin-top': '10px'}).addClass('test-fail');
+                }
+            },
+            error: function() {
+                $('#test-connection-result').text('An error occurred while testing the connection.').css({color: '#721c24', background: '#f8d7da', padding: '8px', 'border-radius': '4px', 'margin-top': '10px'}).addClass('test-fail');
+            },
+            complete: function() {
+                $btn.prop('disabled', false).text('Test Connection');
+            }
+        });
     });
 
     // Site-wide Audit form submission
@@ -224,4 +256,4 @@ jQuery(document).ready(function($) {
         });
     });
 });
-</script> 
+</script>
