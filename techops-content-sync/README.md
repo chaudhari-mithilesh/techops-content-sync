@@ -102,3 +102,5 @@ This plugin is licensed under the GPL v2 or later.
 ## Support
 
 For support, please open an issue in the GitHub repository. 
+
+### Connection test -from Saniyaj
