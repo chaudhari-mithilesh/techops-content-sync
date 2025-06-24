@@ -103,4 +103,55 @@ This plugin is licensed under the GPL v2 or later.
 
 For support, please open an issue in the GitHub repository. 
 
-### Connection test -from Saniyaj
+
+# Project Structure & Folder Purposes
+
+### 1. `techops-content-sync/`
+This is the main WordPress plugin folder. It contains:
+- **`techops-content-sync.php`**: Main plugin file, bootstraps the plugin.
+- **`admin/`**: Admin UI assets and partials for settings, automation, and management pages.
+  - `partials/`: PHP templates for admin pages (dashboard, settings, automation).
+  - `css/` and `js/`: Styles and scripts for the admin interface.
+- **`includes/`**: Core PHP classes for handling admin, API, authentication, file operations, GitHub integration, security, etc.
+- **`modules/`**: Contains additional plugin modules (see below).
+- **`uninstall.php`**: Handles cleanup on plugin uninstall.
+
+### 2. `modules/visual-regression-tester/`
+This is a sub-plugin/module for visual regression testing, structured as a standalone WordPress plugin:
+- **`visual-regression-tester.php`**: Main file for this module/plugin.
+- **`admin/`**: Admin UI for visual regression testing (single test, site-wide audit).
+- **`includes/`**: PHP classes for running tests, integrating with BackstopJS, etc.
+- **`public/`**: Frontend shortcodes and public-facing logic.
+- **`assets/`**: CSS/JS for the module’s admin UI.
+- **`backstop_data/`**: Stores test results, screenshots, and reports.
+- **`templates/`**: Admin page templates.
+
+---
+
+## How the Two Plugins Are Connected
+
+- **Parent-Child Relationship:**  
+  The main `techops-content-sync` plugin acts as a parent or host. The `visual-regression-tester` is a module inside the `modules/` directory, but it is structured as a full WordPress plugin and can be loaded/activated independently or as part of the main plugin’s ecosystem.
+
+- **Integration Points:**  
+  - Both plugins add their own admin pages to the WordPress dashboard.
+  - The main plugin focuses on syncing, managing, and automating plugin/theme operations (with GitHub integration).
+  - The visual regression tester module adds advanced testing capabilities, allowing users to visually compare site versions or environments.
+  - They may share authentication, settings, or utility functions, but each has its own admin UI and logic.
+
+- **Purpose of Connection:**  
+  By including the visual regression tester as a module, the main plugin offers a more complete DevOps/content workflow: not only can you sync and manage code/content, but you can also visually verify changes and catch regressions—all from the same admin interface.
+
+---
+
+## Summary Table
+
+| Folder/Plugin                  | Purpose                                                                 |
+|------------------------------- |------------------------------------------------------------------------|
+| `techops-content-sync/`        | Main plugin: sync/manage plugins/themes, GitHub integration, automation |
+| `modules/visual-regression-tester/` | Sub-plugin/module: visual regression testing (BackstopJS integration)   |
+
+---
+
+**In short:**  
+The main plugin manages content and automation, while the module adds visual testing. They are connected by being in the same codebase and can work together to streamline WordPress site management and quality assurance.
