@@ -3,7 +3,7 @@
  * Plugin Name: TechOps Content Sync
  * Plugin URI: https://example.com/techops-content-sync
  * Description: Syncs WordPress plugins and themes with a Git repository
- * Version: 1.2.1
+ * Version: 1.2.4
  * Author: TechOps
  * Author URI: https://example.com
  * Text Domain: techops-content-sync

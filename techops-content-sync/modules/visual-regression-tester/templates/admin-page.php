@@ -54,10 +54,10 @@ $options = get_option('techops_visual_testing_settings');
                     </tr>
                 </table>
                 <p>
-                    <button type="button" class="button" id="test-sitemap">Test Sitemap</button>
                     <button type="submit" class="button button-primary" id="run-site-wide-audit">Run Audit</button>
                 </p>
             </form>
+            <div id="site-wide-audit-result" style="margin-top:10px;"></div>
         </div>
     </div>
 
@@ -203,47 +203,6 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Site-wide Audit form submission
-    $('#site-wide-audit-form').on('submit', function(e) {
-        e.preventDefault();
-        const $form = $(this);
-        const $button = $('#run-site-wide-audit');
-        $button.prop('disabled', true);
-
-        $.ajax({
-            url: ajaxurl,
-            type: 'POST',
-            data: {
-                action: 'techops_run_site_wide_audit',
-                'techops_visual_testing_nonce': $form.find('input[name="techops_visual_testing_nonce"]').val(),
-                reference_sitemap_url: $('#reference_sitemap_url').val(),
-                test_sitemap_url: $('#test_sitemap_url').val(),
-                audit_id: 'site-wide-audit-' + Date.now() // Unique ID for the audit
-            },
-            success: function(response) {
-                if (response.success) {
-                    alert('Site-wide audit initiated successfully!');
-                    location.reload();
-                } else {
-                    alert('Error: ' + response.data);
-                }
-            },
-            error: function() {
-                alert('An error occurred while running the site-wide audit');
-            },
-            complete: function() {
-                $button.prop('disabled', false);
-            }
-        });
-    });
-
-    // Test Sitemap (Site-wide Audit)
-    $('#test-sitemap').on('click', function(e) {
-        e.preventDefault();
-        alert('Test Sitemap functionality needs to be implemented in PHP.');
-        // You would typically make an AJAX call here to test the sitemap URLs
-    });
-
     // Fetch and display recent tests from external API
     function loadRecentTests() {
         const $tbody = $('#recent-tests-table tbody');
@@ -272,5 +231,80 @@ jQuery(document).ready(function($) {
             });
     }
     loadRecentTests();
+
+    // Site-wide Audit form submission (AJAX, Run Test style)
+    $('#site-wide-audit-form').on('submit', function(e) {
+        console.log('[Site-wide Audit] Form submit triggered');
+        e.preventDefault();
+        const $form = $(this);
+        const $button = $('#run-site-wide-audit');
+        let $result = $('#site-wide-audit-result');
+        $button.prop('disabled', true);
+        console.log('[Site-wide Audit] Button disabled');
+        $result.html('<span>Running site-wide audit...</span>').css({background:'#f8f9fa',padding:'10px',border:'1px solid #ccc','border-radius':'6px'});
+        const refSitemapUrl = $('#reference_sitemap_url').val();
+        const testSitemapUrl = $('#test_sitemap_url').val();
+        const reqBody = {
+            testsitemapurl: testSitemapUrl,
+            refsitemapurl: refSitemapUrl
+        };
+        console.log('[Site-wide Audit] Request body:', reqBody);
+        console.log('[Site-wide Audit] Fetching:', 'http://localhost:3000/api/test/sitemap');
+        fetch('http://localhost:3000/api/test/sitemap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(reqBody)
+        })
+        .then(response => {
+            console.log('[Site-wide Audit] Raw response:', response);
+            return response.json();
+        })
+        .then(data => {
+            console.log('[Site-wide Audit] API Response:', data);
+            if (data.error) {
+                $result.html('<span style="color:red;">Error: ' + data.error + '</span>');
+                console.warn('[Site-wide Audit] API error:', data.error);
+            } else {
+                let html = '';
+                html += '<b>Test Domain:</b> ' + data.testDomain + '<br>';
+                html += '<b>Reference Domain:</b> ' + data.refDomain + '<br>';
+                html += '<b>Matching URLs:</b> ' + (data.matchingUrls && data.matchingUrls.length ? data.matchingUrls.join(', ') : 'None') + '<br>';
+                if (data.missingUrls) {
+                    html += '<b>Missing in Test:</b> ' + (data.missingUrls.inTest && data.missingUrls.inTest.length ? data.missingUrls.inTest.join(', ') : 'None') + '<br>';
+                    html += '<b>Missing in Reference:</b> ' + (data.missingUrls.inRef && data.missingUrls.inRef.length ? data.missingUrls.inRef.join(', ') : 'None') + '<br>';
+                }
+                if (Array.isArray(data.testresults)) {
+                    html += '<b>Test Results:</b><ul>';
+                    data.testresults.forEach(tr => {
+                        const status = tr.passed ? '<span style="color:green;font-weight:bold;">Passed</span>' : '<span style="color:red;font-weight:bold;">Failed</span>';
+                        const reportUrl = 'http://localhost:3000' + tr.reportUrl;
+                        html += '<li><b>Path:</b> ' + tr.path + ' - ' + status + ' - <a href="' + reportUrl + '" target="_blank">View Report</a></li>';
+                    });
+                    html += '</ul>';
+                }
+                // Optionally show allRefUrls and allTestUrls
+                if (Array.isArray(data.allRefUrls)) {
+                    html += '<details><summary>All Reference URLs</summary><ul>';
+                    data.allRefUrls.forEach(url => { html += '<li>' + url + '</li>'; });
+                    html += '</ul></details>';
+                }
+                if (Array.isArray(data.allTestUrls)) {
+                    html += '<details><summary>All Test URLs</summary><ul>';
+                    data.allTestUrls.forEach(url => { html += '<li>' + url + '</li>'; });
+                    html += '</ul></details>';
+                }
+                $result.html(html).css({background:'#f8f9fa',padding:'10px',border:'1px solid #ccc','border-radius':'6px'});
+                console.log('[Site-wide Audit] Result displayed in UI');
+            }
+        })
+        .catch(error => {
+            $result.html('<span style="color:red;">API request failed.</span>');
+            console.error('[Site-wide Audit] API Error:', error);
+        })
+        .finally(() => {
+            $button.prop('disabled', false);
+            console.log('[Site-wide Audit] Button re-enabled');
+        });
+    });
 });
 </script>
